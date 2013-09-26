@@ -1,6 +1,6 @@
 {
   "name": "tishadow",
-  "version": "1.3.2",
+  "version": "1.3.2-carma",
   "dependencies": {
     "jade": ">= 0.0.1",
     "socket.io": ">= 0.9.6",
@@ -25,11 +25,11 @@
   "engines": {
     "node": "0.8.x"
   },
-  "author": "David Bankier <david@yydigital.com> (http://www.yydigital.com)",
+  "author": "David Bankier <david@yydigital.com> (http://www.yydigital.com) - Mod'd by carma-dev",
   "description": "Quick Titanium previews across devices",
   "repository": {
     "type": "git",
-    "url": "git://github.com/dbankier/TiShadow.git"
+    "url": "git://github.com/miniman42/TiShadow.git"
   },
   "bin": {
     "tishadow": "./cli/tishadow"
