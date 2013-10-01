@@ -14,9 +14,11 @@ function getList(start, last_update, _path) {
     var coll = filenames.reduce(function (acc, name) {
       var abspath = path.join(start, name);
       var file_stat = fs.statSync(abspath);
-      if (name.match(/^\./)) {
+      if (name.match(/^\./)){
         // IGNORING HIDDEN FILES
-      } else if (file_stat.isDirectory()) {
+  		//} else if(abspath.indexOf('/api/') !== -1){  //} || abspath.indexOf('heartbeat') !== -1) {
+        //IGNORE API
+        } else if (file_stat.isDirectory()) {
         acc.dirs.push(name);
       } else {
         if (last_update === undefined || last_update < file_stat.mtime) {

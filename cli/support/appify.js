@@ -16,6 +16,8 @@ _.templateSettings = {
         '<module platform="android" version="0.1">net.iamyellow.tiws</module>',
         '<module platform="iphone" version="1.0.2">ti.compression</module>',
         '<module platform="android" version="2.0.3">ti.compression</module>'
+        //TODO: add any other modules we are dependent on here.
+
  ];
 
 
@@ -40,7 +42,10 @@ exports.copyCoreProject = function(env) {
     logger.info("TiShadow app upgraded");
   } else {
     wrench.copyDirSyncRecursive(tishadow_app, dest);
-
+    if (!config.isShadowModulesIncluded){
+    	wrench.rmdirSyncRecursive(path.join(dest,'modules/android'));
+    	wrench.rmdirSyncRecursive(path.join(dest,'modules/iphone'));
+    }
     //inject new GUID
     var source_tiapp = fs.readFileSync(path.join(tishadow_app,"tiapp.xml"),'utf8');
     fs.writeFileSync(path.join(dest,"tiapp.xml"), 
@@ -60,6 +65,7 @@ exports.build = function(env) {
   var dest_modules = path.join(dest,"modules");
   var dest_platform = path.join(dest,"platform");
   var template_file = path.join(tishadow_app,"Resources","appify.js");
+  
 
   //set to bundle mode
   env._name = "bundle";
@@ -67,11 +73,12 @@ exports.build = function(env) {
   //bundle the source
   compiler(env,function() {
     logger.info("Appying...");
+    logger.info(JSON.stringify(config));
     //copy tishadow src
     if (exports.copyCoreProject(env)) {
       // generate app.js
       var template = fs.readFileSync(template_file,'utf8');
-      var new_app_js = _.template(template, {proto: "http" + (config.isTiCaster ? "s" : ""), host:config.host, port: config.port, room: config.room, app_name: config.app_name});
+      var new_app_js = _.template(template, {proto: "http" + (config.isTiCaster ? "s" : ""), host:config.host, port: config.port, room: config.room, app_name: config.app_name, type: config.type});
       fs.writeFileSync(path.join(dest_resources,"app.js"),new_app_js);
       //copy fonts
       if(fs.existsSync(config.fonts_path)) {
@@ -91,7 +98,10 @@ exports.build = function(env) {
       });
       // copy tiapp.xml and inject modules
       var source_tiapp = fs.readFileSync(path.join(config.base,"tiapp.xml"),'utf8');
-      required_modules.push("</modules>")
+      if (!config.isShadowModulesIncluded){
+      	required_modules=[]; //if excluding shadow modules then make sure not to include them in the output tiapp.xml
+      } 
+      required_modules.push("</modules>");
       fs.writeFileSync(path.join(dest,"tiapp.xml"), 
                        source_tiapp
                        .replace(/<plugins>(.|\n)*<\/plugins>/,"")
@@ -101,4 +111,4 @@ exports.build = function(env) {
       fs.writeFileSync(path.join(dest_resources, config.app_name.replace(/ /g,"_") + ".zip"),fs.readFileSync(config.bundle_file));
     }
   });
-}
+};
