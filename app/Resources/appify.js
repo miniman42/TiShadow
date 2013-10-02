@@ -5,8 +5,10 @@
 
 Titanium.App.idleTimerDisabled = true;
 
-var TiShadow = require("/api/TiShadow");
-var Compression = require('ti.compression');
+var TiShadow = require("/api/TiShadow"),
+	Compression = require('ti.compression'),
+	log = require('/api/Log'), 
+	utils = require('/api/Utils');
 
 
 // Need to unpack the bundle on a first load;
