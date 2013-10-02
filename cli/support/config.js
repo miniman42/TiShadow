@@ -74,6 +74,22 @@ config.buildPaths = function(env, callback) {
   });
 };
 
+
+function getIPAddress() {
+  var interfaces = require('os').networkInterfaces();
+  for (var devName in interfaces) {
+    var iface = interfaces[devName];
+
+    for (var i = 0; i < iface.length; i++) {
+      var alias = iface[i];
+      if (alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal)
+        return alias.address;
+    }
+  }
+
+  return '0.0.0.0';
+}
+
 config.init = function(env) {
   config.isSpec     = env._name === "spec";
   config.isDeploy   = env._name === "deploy";
@@ -84,7 +100,7 @@ config.init = function(env) {
   config.isBundle   = env._name === "bundle";
   config.isTiCaster = env.ticaster;
   if (!env.ticaster) {
-    config.host     = env.host || config.host || "localhost";
+    config.host     = env.host || config.host || getIPAddress();
     config.port     = env.port || config.port || "3000";
     config.room     = env.room || config.room || "default";
     config.type     = env.type || config.type || "dev";
