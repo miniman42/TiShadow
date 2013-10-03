@@ -66,8 +66,15 @@ exports.start = function(options){
 
 function getLatestBundle(bundleTimestamp){
     alert('Getting bundle for ' + bundleTimestamp);
+    //TODO: each OS will have it's own bundle 
+    var osPart = 'ios'; 
+    if(Titanium.Platform.osname === 'android'){
+        osPart = 'android';
+    }
+    
+    var updateUrl="https://developer.avego.com/bundles/"+bundleTimestamp+"/"+ osPart + "/carma-splinter.zip";
 
-    var updateUrl="http://developer.avego.com/libs/splinter/carma-splinter.zip";
+    //"http://developer.avego.com/libs/splinter/carma-splinter.zip";
     loadRemoteZip("carma-splinter",updateUrl);
   
 }
