@@ -71,6 +71,7 @@ program.command('deploy')
 program.command('bundle')
   .description('prepare a TiShadow bundle without deploying it'.grey)
   .option('-j, --jshint', 'analyse code with JSHint')
+  .option('-t, --timestamp <timestamp>', 'set the timestamp (UTC Seconds) in the created bundle manifest')
   .action(compiler);
 
 program.command('spec')
