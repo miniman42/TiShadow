@@ -109,6 +109,7 @@ config.init = function(env) {
     config.port     = 443;
   }
   config.isShadowModulesIncluded = !env.excludeshadowmodules;
+  config.timestamp = env.timestamp || Math.round(new Date().getTime()/1000);
   config.internalIP = env.internalIp;
   config.isLongPolling = env.longPolling;
   config.isManageVersions = env.manageVersions;
