@@ -47,7 +47,8 @@ function prepare(src, dst, callback) {
 function prepareFiles(index, file_list, isSpec, callback) {
   if (index===0){
 	//initialise manifset contents
-  	manifest = "#Created:"+new Date().getTime()+"\n";
+  	manifest = "#Created:"+(new Date().getTime()/1000)+"\n";
+  	console.log("Bundle Meta - "+manifest);
   }
   if (file_list.files.length === index) {
 	fs.writeFile(path.join(config.tishadow_src, manifestFilename),manifest,callback());
