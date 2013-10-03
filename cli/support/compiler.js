@@ -8,13 +8,20 @@ var path   = require("path"),
     uglify = require("./uglify"),
     logger = require("../../server/logger.js"),
     jshint = require("./jshint_runner"),
+    crypto = require('crypto'),
     _      = require("underscore");
 
     require("./fs_extension");
 
+var manifestFilename="manifest.mf";    
+var manifest;    
+
 // Copies all Resource files and prepares JS files
 function prepare(src, dst, callback) {
   var app_name = config.app_name;
+  var hash="--------------------------------";
+  var outdir="/tishadow/src/";
+  var hashFile=dst.substring(dst.indexOf(outdir)+outdir.length);
   if (src.match("js$")){ 
     try {
       var src_text = uglify.toString(fs.readFileSync(src).toString(),src);
@@ -23,6 +30,7 @@ function prepare(src, dst, callback) {
           +src_text;
       }
       fs.writeFile(dst,src_text, callback);
+      hash = crypto.createHash('md5').update(src_text).digest('hex').slice(0, 32);
     } catch (e) {
       logger.error(e.message + "\nFile   : " + src + "\nLine   : " + e.line + "\nColumn : " + e.col);
       process.exit(1);
@@ -30,13 +38,19 @@ function prepare(src, dst, callback) {
   } else { // Non-JS file - just pump it
     var  is = fs.createReadStream(src);
     var  os = fs.createWriteStream(dst);
+    hash = crypto.createHash('md5').update(fs.readFileSync(src)).digest('hex').slice(0, 32);
     is.on("end", callback).pipe(os);
   }
+  manifest+= hashFile + ","+ hash +"\n";
 }
 
 function prepareFiles(index, file_list, isSpec, callback) {
+  if (index===0){
+	//initialise manifset contents
+  	manifest = "#Created:"+new Date().getTime()+"\n";
+  }
   if (file_list.files.length === index) {
-    callback();
+	fs.writeFile(path.join(config.tishadow_src, manifestFilename),manifest,callback());
   } else {
     var file = file_list.files[index];
     prepare(path.join(isSpec? config.base : config.resources_path,file), path.join(config.tishadow_src, file), function(){
@@ -120,7 +134,7 @@ module.exports = function(env, callback) {
      // Process Files
      prepareFiles(0, file_list, false, function() {
        prepareFiles(0, spec_list, true, function() {
-          file_list.files = file_list.files.concat(i18n_list.files).concat(spec_list.files);
+          file_list.files = file_list.files.concat(i18n_list.files).concat(spec_list.files).concat(manifestFilename);
           finalise(file_list,callback);
        });
      });
