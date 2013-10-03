@@ -30,7 +30,12 @@ exports.start = function(options){
         console.log('CARMIFY: minAppRevision: ' + minAppRevision + ' vs ' + currentAppVersion);
         console.log('CARMIFY: currentBundleTimestamp: ' + currentBundleTimestamp);
        if(minAppRevision <= currentAppVersion){
-            getLatestBundle(currentBundleTimestamp);
+            if( Ti.App.Properties.getString('bundleVersion') != currentBundleTimestamp){
+              getLatestBundle(currentBundleTimestamp);
+            }
+        }
+        else{
+            alert('not going');
         }
     });
 
@@ -76,6 +81,9 @@ function getLatestBundle(bundleTimestamp){
 
     //"http://developer.avego.com/libs/splinter/carma-splinter.zip";
     loadRemoteZip("carma-splinter",updateUrl);
+
+    //save current bundle version 
+    Ti.App.Properties.setString('bundleVersion', bundleTimestamp);
   
 }
 
