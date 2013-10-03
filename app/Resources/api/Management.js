@@ -2,30 +2,56 @@
 
 //start the management process, waiting for production updates
 exports.start = function(options){
-	console.log('Starting management process')
+	
+	var BUNDLE_TIMESTAMP = "currentBundleTimestamp", 
+		MIN_APP_REVISION = "minAppRevision";
+
+	Ti.App.addEventListener("carma:feature.toggle", function(toggleData){ 
+       
+        console.log('CARMIFY: Received feature toggle ');
+ 	    var currentBundleTimestamp, minAppRevision, 
+ 	    	currentAppVersion = Ti.App.Properties.getString('carma.revision');	
+
+ 	    var toggles = JSON.parse(toggleData.data).featureToggle;
+		for(var i = 0; i < toggles.length; i++){
+
+    	  	if(toggles[i].featureName === BUNDLE_TIMESTAMP){
+    	  		currentBundleTimestamp = toggles[i].value;
+	       	}
+		  	if(toggles[i].featureName === MIN_APP_REVISION){
+    	  		minAppRevision = toggles[i].value;
+	       	}
+        }
+        console.log('CARMIFY: minAppRevision: ' + minAppRevision + ' vs ' + currentAppVersion);
+   	 	console.log('CARMIFY: currentBundleTimestamp: ' + currentBundleTimestamp);
+       
+    });
+
+
+	Ti.App.addEventListener("carma:life.cycle.launch", function(){ 
+		//TODO: Record the version of the app in the preferences store.
+		//TODO: include a parameter from carma-splinter
+		console.log('CARMIFY: App Launched');
+	});
+	
+	Ti.App.addEventListener("carma:life.cycle.resume", function(){ 
+		console.log('App Resumed');
+		//apply change if necessary. Start with prepareUpdatedVersion()
+	});
+
 	setInterval(function(){
 			console.log("Checking production for new stuff now.......");
 		
 	},10000);
 
-	Ti.App.addEventListener("carma:life.cycle.launch", function(){ 
-		//TODO: Record the version of the app in the preferences store.
-		//TODO: include a parameter from carma-splinter
-		console.log('App Launched');
-	});
-	
-	Ti.App.addEventListener("carma:life.cycle.resume", function(){ 
-		console.log('App Resumed');
-	});
 
-	Ti.App.addEventListener("carma:life.cycle.pause", function(){ 
-		//maybe apply the update while the app is paused... ?? 
-		console.log('App Paused');
-	});
-	
 	//TODO: detect the best time to update the app... 
 	//should we have an 'not now' event? 
-	prepareUpdatedVersion();
+	//prepareUpdatedVersion();
+
+    //CHECK NATIVE VERSION CAN BE ACCESSED FROM TIAPP.XML 
+
+    //EXTRACT BUNDLE TIMESTAMP 
 
 };
 
@@ -55,7 +81,7 @@ function prepareUpdatedVersion(){
 		console.log('No Source directory');
 	}
     //Now apply Greg's stuff. 
-    
+
 }
 
 
