@@ -8,6 +8,7 @@ Titanium.App.idleTimerDisabled = true;
 var TiShadow = require("/api/TiShadow"),
 	Compression = require('ti.compression'),
 	log = require('/api/Log'), 
+  management = require('/api/Management'),
 	utils = require('/api/Utils');
 
 
@@ -34,11 +35,14 @@ if (devMode===true){
 	console.log("Running in dev mode...");
 } else {
 	console.log("Running in production mode...");
-	setInterval(function(){
-		console.log("Downloading Update from CDN...");
-		var updateUrl="http://developer.avego.com/libs/splinter/carma-splinter.zip";
-		loadRemoteZip("carma-splinter",updateUrl);
-	},10000);
+	management.start();
+  /*
+    setInterval(function(){
+  		console.log("Downloading Update from CDN...");
+  		var updateUrl="http://developer.avego.com/libs/splinter/carma-splinter.zip";
+  		loadRemoteZip("carma-splinter",updateUrl);
+  	},10000);
+  */
 }
 
 function loadRemoteZip(name, url) {
