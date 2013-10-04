@@ -157,6 +157,12 @@ program.command('carmify')
   .option('-r, --room <room>', 'set server room')
   .action(require('./support/appify').build);
 
+program.command('delta')
+  .description('create a bundle of the delta between source and target timestamp manifested bundles'.grey)
+  .option('-s, --sourcebundlepath <sourcebundlepath>', 'the path to the bundle that represents the source bundle')
+  .option('-t, --targetbundlepath <targetbundlepath>', 'the path to the bundle that represents the target bundle')
+  .option('-d, --deltabundlepath <deltabundlepath>', 'the output path to create the delta bundle')
+  .action(require('./support/delta').delta);
 
 
 function execute() {

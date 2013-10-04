@@ -1,5 +1,6 @@
 var path = require("path"),
-    fs = require("fs");
+    fs = require("fs"),
+    osSep = process.platform === 'win32' ? '\\' : '/';
 
 
 // Get Filelist with optional "update" filter
@@ -66,7 +67,7 @@ fs.mkdirs = function(dirs, rel_root) {
       fs.mkdirSync(full_path);
     }
   });
-}
+};
 
 // Like a normal bash touch
 fs.touch = function(file) {
@@ -76,7 +77,41 @@ fs.touch = function(file) {
   } else {
     fs.writeFileSync(file,"");
   }
-}
+};
+
+function mkdirSyncP(path, position) {
+  var parts = require('path').normalize(path).split(osSep);
+  position = position || 0;
+  
+  if (position >= parts.length) {
+    return true;
+  }
+  
+  var directory = parts.slice(0, position + 1).join(osSep) || osSep;
+  try {
+    fs.statSync(directory);
+    mkdirSyncP(path, position + 1);
+  } catch (e) {
+    try {
+      fs.mkdirSync(directory);
+      mkdirSyncP(path, position + 1);
+    } catch (e) {
+      if (e.code != 'EEXIST') {
+        throw e;
+      }
+      mkdirSyncP(path, position + 1);
+    }
+  }
+};
+
+fs.mkdirSyncP = mkdirSyncP;
+
+
+
+
+
+
+
 
 
 

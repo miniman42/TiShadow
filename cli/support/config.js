@@ -114,6 +114,9 @@ config.init = function(env) {
   config.isLongPolling = env.longPolling;
   config.isManageVersions = env.manageVersions;
   config.platform = env.platform;
+  config.sourcebundlepath = env.sourcebundlepath;
+  config.targetbundlepath = env.targetbundlepath;
+  config.deltabundlepath = env.deltabundlepath;
 };
 
 config.write = function(env) {
