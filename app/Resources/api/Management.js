@@ -64,6 +64,10 @@ exports.start = function(options){
         //TODO: Record the version of the app in the preferences store.
         //TODO: include a parameter from carma-splinter
         console.log('CARMIFY: App Launched');
+        var updateReady = Ti.App.Properties.getBool('updateReady');
+        if(updateReady){ 
+            applyUpdate();
+        }
     });
     
     Ti.App.addEventListener("carma:life.cycle.resume", function(){ 
