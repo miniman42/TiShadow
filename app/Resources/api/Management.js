@@ -72,7 +72,6 @@ exports.start = function(options){
     
     Ti.App.addEventListener("carma:life.cycle.resume", function(){ 
         console.log('App Resumed');
-        alert("resuming...");
         var updateReady = Ti.App.Properties.getBool('updateReady');
         //alert("resuming - "+updateReady);
         if(updateReady){ 
