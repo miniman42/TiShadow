@@ -96,14 +96,14 @@ function applyUpdate(){
     'carma-splinter');
     var newApp  =Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,            
     'standby');
-    oldApp.deleteDirectory(true);
+  	oldApp.rename('legacy');
+  	Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,            
+    'legacy').deleteDirectory(true);
     console.log('Deleted old app');
-    copyDir(Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory), newApp, 'carma-splinter');
-    console.log('Copied new app');
+    newApp.rename('carma-splinter');
+    console.log('Switched in new app');
     TiShadow.launchApp('carma-splinter');
     console.log('Launched new app');
-    //delete the new app 
-    newApp.deleteDirectory(true);
     //Update is now complete
     Ti.App.Properties.setBool('updateReady', false);
 }
