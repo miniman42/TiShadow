@@ -21,7 +21,7 @@ exports.start = function(options){
         console.log('CARMIFY: Received feature toggle ');
         var currentBundleTimestamp, minAppRevision, minAppRevision,
             currentAppVersion = Number(Ti.App.Properties.getString('carma.revision')), 
-            localBundleVersion = Number(Ti.App.Properties.getString('bundleVersion'));  
+            localBundleVersion = getLocalBundleVersion();  
 
 
         var toggles = JSON.parse(toggleData.data).featureToggle;
@@ -72,6 +72,7 @@ exports.start = function(options){
     
     Ti.App.addEventListener("carma:life.cycle.resume", function(){ 
         console.log('App Resumed');
+        alert("resuming...");
         var updateReady = Ti.App.Properties.getBool('updateReady');
         //alert("resuming - "+updateReady);
         if(updateReady){ 
@@ -88,7 +89,15 @@ exports.start = function(options){
 
 };
 
-
+function getLocalBundleVersion(){
+	var localBundleVersion = Number(Ti.App.Properties.getString('bundleVersion')); 
+	if (localBundleVersion===0){
+		var currentManifestFile = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory + "/" + 'carma-splinter/manifest.mf');
+		Ti.App.Properties.setString('bundleVersion', currentManifestFile.read().text.split(/\r\n|\r|\n/g)[0].split(':')[1]);
+		localBundleVersion = Number(Ti.App.Properties.getString('bundleVersion'));
+	}
+	return localBundleVersion;
+};
 
 function applyUpdate(){
 
@@ -151,7 +160,6 @@ function loadRemoteZip(name, url, bundleTimestamp) {
        Ti.App.Properties.setBool('updateReady', true);
        //save current bundler version
        Ti.App.Properties.setString('bundleVersion', bundleTimestamp);
-
 
       // Launch
       //DON'T Launch the app yet. 
