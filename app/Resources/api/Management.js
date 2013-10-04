@@ -38,11 +38,20 @@ exports.start = function(options){
         console.log('CARMIFY: maxAppRevision: ' + maxAppRevision);
         console.log('CARMIFY: localBundleVersion: ' + localBundleVersion);
 
+
+        //TODO: REMOVE THIS - ITs JUST ARTIFICIAL 
+        localBundleVersion = currentBundleTimestamp - 10;
+
+
        //HERE WE BREAK 
        if(minAppRevision <= currentAppVersion){
+            console.log('min app comparison passed');
             if(currentAppVersion <= maxAppRevision){
                 //GET THE BUNDLE 
+                console.log('max app comparison passed');
                 if(localBundleVersion < currentBundleTimestamp){
+                  console.log('bundle comparison passed');
+
                   getLatestBundle(currentBundleTimestamp);
                 }
             }
@@ -89,25 +98,19 @@ function getLatestBundle(bundleTimestamp){
     var updateUrl="https://developer.avego.com/bundles/"+bundleTimestamp+"/"+ osPart + "/carma-splinter.zip";
     //first prepare the old version 
     prepareUpdatedVersion();
-    loadRemoteZip("carma-splinter",updateUrl);
-    
-    processManifests('carma-splinter', 'carma-splinter-latest');
-
-    //save current bundle version 
-    Ti.App.Properties.setString('bundleVersion', bundleTimestamp);
-
+    loadRemoteZip("carma-splinter",updateUrl, bundleTimestamp);
   
 }
 
 
-function loadRemoteZip(name, url) {
+function loadRemoteZip(name, url, bundleTimestamp) {
   var xhr = Ti.Network.createHTTPClient();
   xhr.setTimeout(10000);
   xhr.onload=function(e) {
     try {
       log.info("Unpacking new production bundle: " + name);
 
-      var path_name = 'carma-splinter-latest';
+      var path_name = 'latest';
       // SAVE ZIP
       var zip_file = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, path_name + '.zip');
       zip_file.write(this.responseData);
@@ -120,6 +123,12 @@ function loadRemoteZip(name, url) {
       var dataDir=Ti.Filesystem.applicationDataDirectory + "/";
       Compression.unzip(dataDir + path_name, dataDir + path_name + '.zip',true);
       console.log("Zip is ready......");
+
+       processManifests('standby', 'latest');
+       //save current bundle version 
+       Ti.App.Properties.setString('bundleVersion', bundleTimestamp);
+
+
       // Launch
       //DON'T Launch the app yet. 
       //TiShadow.launchApp(path_name);
@@ -137,14 +146,28 @@ function loadRemoteZip(name, url) {
 
 function processManifests(current, updated){
 
-    var currentManifest = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory + "/" + current,            
+    var currentManifestFile = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory + "/" + current,            
     'manifest.mf');
-    
-    var updatedManifest = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory + "/" + updated,            
+    var updatedManifestFile = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory + "/" + updated,            
     'manifest.mf');
 
-    console.log(' Does ' + currentManifest.nativePath + ' exist ' + currentManifest.exists());
-    console.log(' Does ' + updatedManifest.nativePath + ' exist ' + updatedManifest.exists());
+
+    if(currentManifestFile.exists() && updatedManifestFile.exists()){
+        var currentText = currentManifestFile.read().text;
+        var updatedText = updatedManifestFile.read().text;
+
+        var currentLines = currentText.split(/\r\n|\r|\n/g);
+        var updatedLines = updatedText.split(/\r\n|\r|\n/g);
+        var action = manifestHandler.compareManifest(currentLines, updatedLines);
+        //TODO: apply the changes to the folder.
+
+    }
+    else{
+        console.log('Manifests  are not ready Yet ')
+    }
+
+
+
 }
 
 /** 
@@ -166,11 +189,13 @@ function prepareUpdatedVersion(){
 
     if(sourceDir.exists()){
         //IOS Solution 
-        copyDir(Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory), sourceDir, 'backup');
+        copyDir(Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory), sourceDir, 'standby');
     }
     else{
         console.log('No Source directory');
     }
+
+
     //Now apply Greg's stuff. 
 
 }
