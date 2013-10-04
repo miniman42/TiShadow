@@ -16,7 +16,7 @@ exports.start = function(options){
     Ti.App.addEventListener("carma:feature.toggle", function(toggleData){ 
        
         console.log('CARMIFY: Received feature toggle ');
-        var currentBundleTimestamp, minAppRevision, 
+        var currentBundleTimestamp, minAppRevision, minAppRevision,
             currentAppVersion = Number(Ti.App.Properties.getString('carma.revision')), 
             localBundleVersion = Number(Ti.App.Properties.getString('bundleVersion'));  
 
@@ -40,7 +40,7 @@ exports.start = function(options){
 
        //HERE WE BREAK 
        if(minAppRevision <= currentAppVersion){
-            if(currentAppVersion <= maxAppRevison){
+            if(currentAppVersion <= maxAppRevision){
                 //GET THE BUNDLE 
                 if(localBundleVersion < currentBundleTimestamp){
                   getLatestBundle(currentBundleTimestamp);
@@ -87,13 +87,17 @@ function getLatestBundle(bundleTimestamp){
         osPart = 'android';
     }
     var updateUrl="https://developer.avego.com/bundles/"+bundleTimestamp+"/"+ osPart + "/carma-splinter.zip";
-    //"http://developer.avego.com/libs/splinter/carma-splinter.zip";
+    //first prepare the old version 
+    prepareUpdatedVersion();
     loadRemoteZip("carma-splinter",updateUrl);
+    
+    processManifests('carma-splinter', 'carma-splinter-latest');
+
     //save current bundle version 
     Ti.App.Properties.setString('bundleVersion', bundleTimestamp);
+
   
 }
-
 
 
 function loadRemoteZip(name, url) {
@@ -103,7 +107,7 @@ function loadRemoteZip(name, url) {
     try {
       log.info("Unpacking new production bundle: " + name);
 
-      var path_name = name.replace(/ /g,"_");
+      var path_name = 'carma-splinter-latest';
       // SAVE ZIP
       var zip_file = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, path_name + '.zip');
       zip_file.write(this.responseData);
@@ -115,11 +119,10 @@ function loadRemoteZip(name, url) {
       // Extract
       var dataDir=Ti.Filesystem.applicationDataDirectory + "/";
       Compression.unzip(dataDir + path_name, dataDir + path_name + '.zip',true);
-
-  
-      console.log("Launching...");
+      console.log("Zip is ready......");
       // Launch
-      TiShadow.launchApp(path_name);
+      //DON'T Launch the app yet. 
+      //TiShadow.launchApp(path_name);
     } catch (e) {
       log.error(utils.extractExceptionData(e));
     }
@@ -131,6 +134,18 @@ function loadRemoteZip(name, url) {
   xhr.send();
 };
 
+
+function processManifests(current, updated){
+
+    var currentManifest = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory + "/" + current,            
+    'manifest.mf');
+    
+    var updatedManifest = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory + "/" + updated,            
+    'manifest.mf');
+
+    console.log(' Does ' + currentManifest.nativePath + ' exist ' + currentManifest.exists());
+    console.log(' Does ' + updatedManifest.nativePath + ' exist ' + updatedManifest.exists());
+}
 
 /** 
  * This function will: 
