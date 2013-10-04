@@ -13,8 +13,11 @@ exports.start = function(options){
         MIN_APP_REVISION = "minAppRevision", 
         MAX_APP_REVISION = "maxAppRevision";
 
+    //Feature toggles should really come in at a different time 
+    //Right now it's on launch of the internal app 
+
     Ti.App.addEventListener("carma:feature.toggle", function(toggleData){ 
-       
+        
         console.log('CARMIFY: Received feature toggle ');
         var currentBundleTimestamp, minAppRevision, minAppRevision,
             currentAppVersion = Number(Ti.App.Properties.getString('carma.revision')), 
@@ -39,9 +42,7 @@ exports.start = function(options){
         console.log('CARMIFY: localBundleVersion: ' + localBundleVersion);
 
 
-        //TODO: REMOVE THIS - ITs JUST ARTIFICIAL 
-        localBundleVersion = currentBundleTimestamp - 10;
-
+        
 
        //HERE WE BREAK 
        if(minAppRevision <= currentAppVersion){
@@ -67,26 +68,40 @@ exports.start = function(options){
     
     Ti.App.addEventListener("carma:life.cycle.resume", function(){ 
         console.log('App Resumed');
-        //apply change if necessary. Start with prepareUpdatedVersion()
+        var updateReady = Ti.App.Properties.getBool('updateReady');
+        if(updateReady){ 
+            applyUpdate();
+        }
     });
 
     setInterval(function(){
             console.log("Checking production for new stuff now.......");
         
     },10000);
-
-
-    //TODO: detect the best time to update the app... 
-    //should we have an 'not now' event? 
-    //prepareUpdatedVersion();
-
-    //CHECK NATIVE VERSION CAN BE ACCESSED FROM TIAPP.XML 
-
-    //EXTRACT BUNDLE TIMESTAMP 
+    
+    
 
 };
 
 
+
+function applyUpdate(){
+
+    var oldApp  =Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,            
+    'carma-splinter');
+    var newApp  =Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,            
+    'standby');
+    oldApp.deleteDirectory(true);
+    console.log('Deleted old app');
+    copyDir(Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory), newApp, 'carma-splinter');
+    console.log('Copied new app');
+    TiShadow.launchApp('carma-splinter');
+    console.log('Launched new app');
+    //delete the new app 
+    newApp.deleteDirectory(true);
+    //Update is now complete
+    Ti.App.Properties.setBool('updateReady', false);
+}
 
 function getLatestBundle(bundleTimestamp){
     //alert('Getting bundle for ' + bundleTimestamp);
@@ -96,6 +111,8 @@ function getLatestBundle(bundleTimestamp){
         osPart = 'android';
     }
     var updateUrl="https://developer.avego.com/bundles/"+bundleTimestamp+"/"+ osPart + "/carma-splinter.zip";
+    console.log("Getting file from " + updateUrl);
+
     //first prepare the old version 
     prepareUpdatedVersion();
     loadRemoteZip("carma-splinter",updateUrl, bundleTimestamp);
@@ -125,7 +142,9 @@ function loadRemoteZip(name, url, bundleTimestamp) {
       console.log("Zip is ready......");
 
        processManifests('standby', 'latest');
-       //save current bundle version 
+       //mark update ready
+       Ti.App.Properties.setBool('updateReady', true);
+       //save current bundler version
        Ti.App.Properties.setString('bundleVersion', bundleTimestamp);
 
 
@@ -153,12 +172,14 @@ function processManifests(current, updated){
 
 
     if(currentManifestFile.exists() && updatedManifestFile.exists()){
+        console.log('Process manifest');
         var currentText = currentManifestFile.read().text;
         var updatedText = updatedManifestFile.read().text;
 
         var currentLines = currentText.split(/\r\n|\r|\n/g);
         var updatedLines = updatedText.split(/\r\n|\r|\n/g);
         var action = manifestHandler.compareManifest(currentLines, updatedLines);
+        console.log('Now apply patch');
         //TODO: apply the changes to the folder.
         applyPatch(action, current, updated);
     }
@@ -173,11 +194,51 @@ function processManifests(current, updated){
  **/
 function applyPatch(action, current, updated){
     var standbyDirectory  = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, current);
+    console.log('Standby directory ' + standbyDirectory.nativePath);
+
     var updateDirectory  = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, updated);
+
     for(var i= 0; i< action.filesToDelete.length; i++){
         //delete the following files 
+        var fileToDelete = Ti.Filesystem.getFile(standbyDirectory.nativePath, action.filesToDelete[i]);
+        if(fileToDelete.exists()){
+            fileToDelete.deleteFile();
+        }
     }
+    for(var i= 0; i< action.filesToAdd.length; i++){
+        copyFile(action.filesToAdd, updateDirectory, standbyDirectory);
+    }
+    for(var i= 0; i< action.filesToUpdate.length; i++){
+        copyFile(action.filesToUpdate, updateDirectory, standbyDirectory);
+    }   
 
+    //finally delete the update directory 
+    updateDirectory.deleteDirectory(true);
+
+
+}
+
+function copyFile(filename, sourceDirectory, destinationDirectory){
+        var destPath = '/';       
+        
+        if(filename.indexOf('/') !== -1){
+         // console.log('Path to be split ' + filename);
+          var paths = filename.split('/');
+          destPath = '/';
+         // console.log('Path split into ' + paths.length);
+          for(var j = 0; j < paths.length-1; j++){
+            destPath =  destPath + paths[j] + "/";
+        //    console.log('Path is now '+ destPath);
+          } 
+          filename = path[path.length-1];
+        }
+        //console.log(filename);
+
+        //copyFile(standbyDirectory.nativePath + destPath, fileToCopy.nativePath, filename);
+        var fileToCopy = Ti.Filesystem.getFile(sourceDirectory.nativePath + destPath, filename);  
+        var destinationFile = Titanium.Filesystem.getFile(destinationDirectory.nativePath + destPath, filename);
+        destinationFile.write(fileToCopy.read()); 
+        
 }
 
 /** 
@@ -198,15 +259,12 @@ function prepareUpdatedVersion(){
     }   
 
     if(sourceDir.exists()){
-        //IOS Solution 
         copyDir(Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory), sourceDir, 'standby');
     }
     else{
         console.log('No Source directory');
     }
 }
-
-
 
 
 
@@ -233,48 +291,26 @@ function copyDir(destinationPointer, folder2Copy, name)
  
     var arr = folder2Copy.getDirectoryListing();
     var i = 0;
+
  
     while(i<arr.length)
     { 
         var sourceFile  = Titanium.Filesystem.getFile(folder2Copy.nativePath, arr[i]);
- 
         if(sourceFile.extension() == null)
         {
+       
             var destPointer = Titanium.Filesystem.getFile(destinationPointer.nativePath,name);
             Titanium.API.info(destPointer.nativePath);
             copyDir(destPointer, sourceFile, arr[i]);
         }
         else
-        {
+        {   
+           
             var destinationFile = Titanium.Filesystem.getFile(destination.nativePath, arr[i]);
             destinationFile.write(sourceFile.read());
         }
         i++;
  
-        Titanium.API.info(destinationPointer.getDirectoryListing().toString());
+        ///Titanium.API.info(destinationPointer.getDirectoryListing().toString());
     }
 }
-
- /*
-//Checks what the current native version of the app is 
-exports.getNativeVersion = function(){
-
-};
-
-//get the version of the app that is being hosted
-exports.getHostedVersion = function(){
-
-};
-
-
-//make a call to prepare a new version of the app 
-exports.prepare = function(){
-
-
-};
-
-
-//applies the new version of the app at a particular time
-exports.apply = function(){
-
-};*/
