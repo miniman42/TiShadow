@@ -2,40 +2,50 @@
 var TiShadow = require("/api/TiShadow"),
     Compression = require('ti.compression'),
     log = require('/api/Log'), 
-    utils = require('/api/Utils');
+    utils = require('/api/Utils'), 
+    manifestHandler = require('/api/ManifestHandler');
 
 
 //start the management process, waiting for production updates
 exports.start = function(options){
     
     var BUNDLE_TIMESTAMP = "currentBundleTimestamp", 
-        MIN_APP_REVISION = "minAppRevision";
+        MIN_APP_REVISION = "minAppRevision", 
+        MAX_APP_REVISION = "maxAppRevision";
 
     Ti.App.addEventListener("carma:feature.toggle", function(toggleData){ 
        
         console.log('CARMIFY: Received feature toggle ');
         var currentBundleTimestamp, minAppRevision, 
-            currentAppVersion = Ti.App.Properties.getString('carma.revision');  
+            currentAppVersion = Number(Ti.App.Properties.getString('carma.revision')), 
+            localBundleVersion = Number(Ti.App.Properties.getString('bundleVersion'));  
+
 
         var toggles = JSON.parse(toggleData.data).featureToggle;
         for(var i = 0; i < toggles.length; i++){
-
             if(toggles[i].featureName === BUNDLE_TIMESTAMP){
-                currentBundleTimestamp = toggles[i].value;
+                currentBundleTimestamp = Number(toggles[i].value);
             }
             if(toggles[i].featureName === MIN_APP_REVISION){
-                minAppRevision = toggles[i].value;
+                minAppRevision = Number(toggles[i].value);
+            }
+            if(toggles[i].featureName === MAX_APP_REVISION){
+                maxAppRevision = Number(toggles[i].value);
             }
         }
         console.log('CARMIFY: minAppRevision: ' + minAppRevision + ' vs ' + currentAppVersion);
         console.log('CARMIFY: currentBundleTimestamp: ' + currentBundleTimestamp);
+        console.log('CARMIFY: maxAppRevision: ' + maxAppRevision);
+        console.log('CARMIFY: localBundleVersion: ' + localBundleVersion);
+
+       //HERE WE BREAK 
        if(minAppRevision <= currentAppVersion){
-            if( Ti.App.Properties.getString('bundleVersion') != currentBundleTimestamp){
-              getLatestBundle(currentBundleTimestamp);
+            if(currentAppVersion <= maxAppRevison){
+                //GET THE BUNDLE 
+                if(localBundleVersion < currentBundleTimestamp){
+                  getLatestBundle(currentBundleTimestamp);
+                }
             }
-        }
-        else{
-            alert('not going');
         }
     });
 
@@ -70,18 +80,15 @@ exports.start = function(options){
 
 
 function getLatestBundle(bundleTimestamp){
-    alert('Getting bundle for ' + bundleTimestamp);
+    //alert('Getting bundle for ' + bundleTimestamp);
     //TODO: each OS will have it's own bundle 
     var osPart = 'ios'; 
     if(Titanium.Platform.osname === 'android'){
         osPart = 'android';
     }
-    
     var updateUrl="https://developer.avego.com/bundles/"+bundleTimestamp+"/"+ osPart + "/carma-splinter.zip";
-
     //"http://developer.avego.com/libs/splinter/carma-splinter.zip";
     loadRemoteZip("carma-splinter",updateUrl);
-
     //save current bundle version 
     Ti.App.Properties.setString('bundleVersion', bundleTimestamp);
   
