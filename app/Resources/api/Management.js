@@ -66,13 +66,14 @@ exports.start = function(options){
         console.log('CARMIFY: App Launched');
         var updateReady = Ti.App.Properties.getBool('updateReady');
         if(updateReady){ 
-            applyUpdate();
+            applyUpdate();	
         }
     });
     
     Ti.App.addEventListener("carma:life.cycle.resume", function(){ 
         console.log('App Resumed');
         var updateReady = Ti.App.Properties.getBool('updateReady');
+        //alert("resuming - "+updateReady);
         if(updateReady){ 
             applyUpdate();
         }
@@ -201,7 +202,6 @@ function applyPatch(action, current, updated){
     console.log('Standby directory ' + standbyDirectory.nativePath);
 
     var updateDirectory  = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, updated);
-
     for(var i= 0; i< action.filesToDelete.length; i++){
         //delete the following files 
         var fileToDelete = Ti.Filesystem.getFile(standbyDirectory.nativePath, action.filesToDelete[i]);
@@ -210,11 +210,12 @@ function applyPatch(action, current, updated){
         }
     }
     for(var i= 0; i< action.filesToAdd.length; i++){
-        copyFile(action.filesToAdd, updateDirectory, standbyDirectory);
+        copyFile(action.filesToAdd[i], updateDirectory, standbyDirectory);
     }
     for(var i= 0; i< action.filesToUpdate.length; i++){
-        copyFile(action.filesToUpdate, updateDirectory, standbyDirectory);
+        copyFile(action.filesToUpdate[i], updateDirectory, standbyDirectory);
     }   
+    copyFile('manifest.mf', updateDirectory, standbyDirectory);
 
     //finally delete the update directory 
     updateDirectory.deleteDirectory(true);
@@ -234,15 +235,18 @@ function copyFile(filename, sourceDirectory, destinationDirectory){
             destPath =  destPath + paths[j] + "/";
         //    console.log('Path is now '+ destPath);
           } 
-          filename = path[path.length-1];
+          filename = paths[paths.length-1];
         }
         //console.log(filename);
 
         //copyFile(standbyDirectory.nativePath + destPath, fileToCopy.nativePath, filename);
         var fileToCopy = Ti.Filesystem.getFile(sourceDirectory.nativePath + destPath, filename);  
         var destinationFile = Titanium.Filesystem.getFile(destinationDirectory.nativePath + destPath, filename);
+        //Delete file if it already exists as it will not be overwritten otherwise... 
+        if(destinationFile.exists()){
+            destinationFile.deleteFile();
+        }
         destinationFile.write(fileToCopy.read()); 
-        
 }
 
 /** 
