@@ -160,13 +160,23 @@ function processManifests(current, updated){
         var updatedLines = updatedText.split(/\r\n|\r|\n/g);
         var action = manifestHandler.compareManifest(currentLines, updatedLines);
         //TODO: apply the changes to the folder.
-
+        applyPatch(action, current, updated);
     }
     else{
         console.log('Manifests  are not ready Yet ')
     }
+}
 
 
+/** 
+ * This function will apply all required changes to the standby folder 
+ **/
+function applyPatch(action, current, updated){
+    var standbyDirectory  = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, current);
+    var updateDirectory  = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, updated);
+    for(var i= 0; i< action.filesToDelete.length; i++){
+        //delete the following files 
+    }
 
 }
 
@@ -194,10 +204,6 @@ function prepareUpdatedVersion(){
     else{
         console.log('No Source directory');
     }
-
-
-    //Now apply Greg's stuff. 
-
 }
 
 

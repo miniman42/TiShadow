@@ -23,9 +23,11 @@ exports.compareManifest = function(localManifest, newManifest){
 		}
 		else{
 			if(result.version !== localEntries[i].version){
-				action.filesToUpdate.push(localEntries[i]);
+				action.filesToUpdate.push(localEntries[i].name);
 			}
+
 			//otherwise the files are the same, our work here is done
+			//action.filesToDelete.push(localEntries[i].name);
 		}
 	}
 
@@ -35,7 +37,7 @@ exports.compareManifest = function(localManifest, newManifest){
 		
 		if(getCorrespondingEntry(updatedEntries[i], localEntries) === null){
 			//new file to add 
-			action.filesToAdd.push(updatedEntries[i]);
+			action.filesToAdd.push(updatedEntries[i].name);
 		}
 	}
 	console.log('Update: ' + action.filesToUpdate.length + ' Delete: ' + action.filesToDelete.length + ' Add: ' + action.filesToAdd.length);
