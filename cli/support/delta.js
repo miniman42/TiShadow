@@ -44,16 +44,17 @@ exports.delta = function(env,callback) {
 				fs.writeFileSync(path.join(deldir,'manifest.mf'),fs.readFileSync(path.join(tgtdir,'manifest.mf')));
 				//copy in the files to add and the files to update
 				comparison.filesToAdd.concat(comparison.filesToUpdate).forEach(function(file){
-					var delfilepath=path.join(deldir,file.name);
+					console.log(deldir +" " + file);
+					var delfilepath=path.join(deldir,file);
 					
 					//if dir doesn't exist create it
 					if(!fs.existsSync(path.dirname(delfilepath))) {
-						console.log("--> Creating delta output dir: " +path.dirname(file.name));
+						console.log("--> Creating delta output dir: " +path.dirname(file));
 						fs.mkdirSyncP(path.dirname(delfilepath),true);
 					}
 					//Copy file to delta bundle
 					console.log("--> Copying file to delta output dir: " + JSON.stringify(file));
-					fs.writeFileSync(path.join(deldir,file.name),fs.readFileSync(path.join(tgtdir,file.name)));
+					fs.writeFileSync(path.join(deldir,file),fs.readFileSync(path.join(tgtdir,file)));
 				});
 				
 				//now we need to zip the bundle

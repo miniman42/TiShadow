@@ -19,7 +19,7 @@ exports.compareManifest = function(localManifest, newManifest){
 		
 		result =  getCorrespondingEntry(localEntries[i], updatedEntries);
 		if(result === null){
-			action.filesToDelete.push(localEntries[i].name)
+			action.filesToDelete.push(localEntries[i].name);
 		}
 		else{
 			if(result.version !== localEntries[i].version){
@@ -43,7 +43,7 @@ exports.compareManifest = function(localManifest, newManifest){
 	console.log('Update: ' + action.filesToUpdate.length + ' Delete: ' + action.filesToDelete.length + ' Add: ' + action.filesToAdd.length);
 
 	return action;
-}
+};
 
 /** 
  * Create objects from the lines in the manifest 
@@ -59,7 +59,7 @@ function getDetails(manifest){
 		
 	}
 	return details;
-}
+};
 
 /** 
  * Check if a file (entry) is in another manifest (list)
@@ -71,4 +71,4 @@ function getCorrespondingEntry(entry, list){
 		}
 	}
 	return null;
-}
+};
