@@ -13,51 +13,16 @@ exports.start = function(options){
         MIN_APP_REVISION = "minAppRevision", 
         MAX_APP_REVISION = "maxAppRevision";
 
-    //Feature toggles should really come in at a different time 
-    //Right now it's on launch of the internal app 
-
-    Ti.App.addEventListener("carma:feature.toggle", function(toggleData){ 
-        
-        console.log('CARMIFY: Received feature toggle ');
-        var currentBundleTimestamp, minAppRevision, minAppRevision,
-            currentAppVersion = Number(Ti.App.Properties.getString('carma.revision')), 
-            localBundleVersion = getLocalBundleVersion();  
-
-
-        var toggles = JSON.parse(toggleData.data).featureToggle;
-        for(var i = 0; i < toggles.length; i++){
-            if(toggles[i].featureName === BUNDLE_TIMESTAMP){
-                currentBundleTimestamp = Number(toggles[i].value);
-            }
-            if(toggles[i].featureName === MIN_APP_REVISION){
-                minAppRevision = Number(toggles[i].value);
-            }
-            if(toggles[i].featureName === MAX_APP_REVISION){
-                maxAppRevision = Number(toggles[i].value);
-            }
-        }
-        console.log('CARMIFY: minAppRevision: ' + minAppRevision + ' vs ' + currentAppVersion);
-        console.log('CARMIFY: currentBundleTimestamp: ' + currentBundleTimestamp);
-        console.log('CARMIFY: maxAppRevision: ' + maxAppRevision);
-        console.log('CARMIFY: localBundleVersion: ' + localBundleVersion);
-
-
-        
-
-       //HERE WE BREAK 
-       if(minAppRevision <= currentAppVersion){
-            console.log('min app comparison passed');
-            if(currentAppVersion <= maxAppRevision){
-                //GET THE BUNDLE 
-                console.log('max app comparison passed');
-                if(localBundleVersion < currentBundleTimestamp){
-                  console.log('bundle comparison passed');
-                  getLatestBundle(currentBundleTimestamp);
-                }
-            }
-        }
+    //Feature toggles come in on Launch or resume of the internal app and when there is any change to them in the lifecycle of the app.
+    Ti.App.addEventListener("carma:feature.toggles", function(toggles){ 
+        console.log('CARMIFY: Received feature toggles');
+	    var localBundleVersion = getLocalBundleVersion();  
+		var latestBundleVersion=getLatestBundleVersion(toggles);
+     	if(localBundleVersion < latestBundleVersion){
+   			//Update if required
+   			getLatestBundle(latestBundleVersion);
+		}
     });
-
 
     Ti.App.addEventListener("carma:life.cycle.launch", function(){ 
         //TODO: Record the version of the app in the preferences store.
@@ -70,7 +35,7 @@ exports.start = function(options){
     });
     
     Ti.App.addEventListener("carma:life.cycle.resume", function(){ 
-        console.log('App Resumed');
+        console.log('CARMIFY: App Resumed');
         var updateReady = Ti.App.Properties.getBool('updateReady');
         //alert("resuming - "+updateReady);
         if(updateReady){ 
@@ -78,18 +43,40 @@ exports.start = function(options){
         }
     });
 
-    setInterval(function(){
-            console.log("Checking production for new stuff now.......");
-        
-    },10000);
-    
-    
+};
 
+//INTERPRETS FEATURE TOGGLES AND DETERMINES THE LATEST BUNDLE REVISION AVAILABLE
+//RETURNS 0 IF NOT APPLICABLE
+function getLatestBundleVersion(toggles) {
+    var currentBundleTimestamp=0, minAppRevision=0, maxAppRevision=0,
+    currentAppRevision = Number(Ti.App.Properties.getString('carma.revision')); 
+	//Retrieve relevant toggles
+	for(var i = 0; i < toggles.length; i++){
+	    if(toggles[i].featureName === BUNDLE_TIMESTAMP){
+	        currentBundleTimestamp = Number(toggles[i].value);
+	    }
+	    if(toggles[i].featureName === MIN_APP_REVISION){
+	        minAppRevision = Number(toggles[i].value);
+	    }
+	    if(toggles[i].featureName === MAX_APP_REVISION){
+	        maxAppRevision = Number(toggles[i].value);
+	    }
+	}
+	console.log('CARMIFY: localBundleVersion: ' + getLocalBundleVersion() + ' currentAppRevision: '+currentAppRevision);
+	console.log('CARMIFY: currentBundleTimestamp: ' + currentBundleTimestamp + ' AppRevision Range: ('+minAppRevision+' -> '+maxAppRevision+')');
+	
+    //HERE WE BREAK 
+	if((minAppRevision <= currentAppRevision)&&(currentAppRevision <= maxAppRevision)){
+       	//WE CAN UPDATE IF THERE IS ONE 
+		return currentBundleTimestamp;
+	}
+	return 0; 
 };
 
 function getLocalBundleVersion(){
 	var localBundleVersion = Number(Ti.App.Properties.getString('bundleVersion')); 
 	if (localBundleVersion===0){
+		//Read it from the manifest...
 		var currentManifestFile = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory + '/carma-splinter/manifest.mf');
 		Ti.App.Properties.setString('bundleVersion', currentManifestFile.read().text.split(/\r\n|\r|\n/g)[0].split(':')[1]);
 		localBundleVersion = Number(Ti.App.Properties.getString('bundleVersion'));
@@ -98,7 +85,6 @@ function getLocalBundleVersion(){
 };
 
 function applyUpdate(){
-
     var oldApp  =Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,            
     'carma-splinter');
     var newApp  =Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,            
@@ -116,14 +102,11 @@ function applyUpdate(){
 }
 
 function getLatestBundle(bundleTimestamp){
-    //alert('Getting bundle for ' + bundleTimestamp);
-    //TODO: each OS will have it's own bundle 
     var osPart = 'ios'; 
     if(Titanium.Platform.osname === 'android'){
         osPart = 'android';
     }
     var updateUrl="https://developer.avego.com/bundles/delta.php?os="+osPart+"&src="+getLocalBundleVersion()+"&tgt="+bundleTimestamp;
-    console.log("Getting file from " + updateUrl);
 
     //first prepare the old version 
     prepareUpdatedVersion();
