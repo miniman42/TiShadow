@@ -122,7 +122,7 @@ function getLatestBundle(bundleTimestamp){
     if(Titanium.Platform.osname === 'android'){
         osPart = 'android';
     }
-    var updateUrl="https://developer.avego.com/bundles/delta.php?os="+osPart+"&src="+getLocalBundleVersion()+"&tgt="+bundleTimestamp";
+    var updateUrl="https://developer.avego.com/bundles/delta.php?os="+osPart+"&src="+getLocalBundleVersion()+"&tgt="+bundleTimestamp;
     console.log("Getting file from " + updateUrl);
 
     //first prepare the old version 
