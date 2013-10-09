@@ -52,7 +52,6 @@ exports.start = function(options){
                 console.log('max app comparison passed');
                 if(localBundleVersion < currentBundleTimestamp){
                   console.log('bundle comparison passed');
-
                   getLatestBundle(currentBundleTimestamp);
                 }
             }
@@ -91,7 +90,7 @@ exports.start = function(options){
 function getLocalBundleVersion(){
 	var localBundleVersion = Number(Ti.App.Properties.getString('bundleVersion')); 
 	if (localBundleVersion===0){
-		var currentManifestFile = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory + "/" + 'carma-splinter/manifest.mf');
+		var currentManifestFile = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory + '/carma-splinter/manifest.mf');
 		Ti.App.Properties.setString('bundleVersion', currentManifestFile.read().text.split(/\r\n|\r|\n/g)[0].split(':')[1]);
 		localBundleVersion = Number(Ti.App.Properties.getString('bundleVersion'));
 	}
@@ -123,7 +122,7 @@ function getLatestBundle(bundleTimestamp){
     if(Titanium.Platform.osname === 'android'){
         osPart = 'android';
     }
-    var updateUrl="https://developer.avego.com/bundles/"+bundleTimestamp+"/"+ osPart + "/carma-splinter.zip";
+    var updateUrl="https://developer.avego.com/bundles/delta.php?os="+osPart+"&src="+getLocalBundleVersion()+"&tgt="+bundleTimestamp";
     console.log("Getting file from " + updateUrl);
 
     //first prepare the old version 
@@ -159,6 +158,8 @@ function loadRemoteZip(name, url, bundleTimestamp) {
        Ti.App.Properties.setBool('updateReady', true);
        //save current bundler version
        Ti.App.Properties.setString('bundleVersion', bundleTimestamp);
+       
+       alert("Update "+bundleTimestamp+" ready to be applied on next resume");
 
       // Launch
       //DON'T Launch the app yet. 
