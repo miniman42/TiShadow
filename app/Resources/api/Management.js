@@ -43,7 +43,7 @@ exports.start = function(options){
 		var latestBundleVersion=getLatestUpdateBundleVersion(evt.data);
      	if(localBundleVersion < latestBundleVersion){
    			//Update required
-   			downloadUpdate(latestBundleVersion,prepareUpdate);
+   			downloadUpdate(latestBundleVersion,function() { prepareUpdate(latestBundleVersion); });
 		}
     });
 
@@ -72,6 +72,7 @@ function getInstalledRevision(){
 };
 
 function setInstalledRevision(revision){
+	console.log('CARMIFY: Setting installed revision: '+revision);
 	Ti.App.Properties.setString('installed.revision',revision);	
 };
 
@@ -80,6 +81,7 @@ function isUpdateReady(){
 };
 
 function setUpdateReady(ready){
+	console.log('CARMIFY: set updateReady: '+ready);
 	Ti.App.Properties.setBool('updateReady',ready);
 };
 
@@ -88,6 +90,7 @@ function getBundleVersion(){
 };
 
 function setBundleVersion(version){
+	console.log('CARMIFY: Setting bundleVersion: '+version);
 	Ti.App.Properties.setString('bundleVersion', version);
 };
 
@@ -107,6 +110,7 @@ function readBundleVersion(){
  * - this function must only be called before the module's start method has been invoked.
  **/
 function installAppRevisionBundle(){
+	console.log('CARMIFY: Installing app revision bundle');
 	//clear any pending update tasks for the previous revison.
 	clearPendingUpdate();
 	
@@ -115,11 +119,13 @@ function installAppRevisionBundle(){
 	if (existing.exists()) {
 		//delete the previous existing extracted resources
 		existing.deleteDirectory(true);
+		console.log('CARMIFY: Deleted existing bundle');
 	}
 
 	//create the new app directory and unzip there
 	Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, APP_NAME).createDirectory();
 	Compression.unzip(Ti.Filesystem.applicationDataDirectory + "/" + APP_NAME, Ti.Filesystem.resourcesDirectory + "/" + APP_NAME + '.zip',true);
+	console.log('CARMIFY: Installed bundle');
 	
 	//update the installed revision and bundle
 	setInstalledRevision(getAppRevision());	
@@ -131,6 +137,7 @@ function installAppRevisionBundle(){
  * - clear any pending updates if present
  **/
 function clearPendingUpdate(){
+	console.log('CARMIFY: clearing pending update : '+isUpdateReady());
 	if (isUpdateReady()){
     	setUpdateReady(false);
 		Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,STANDBY_DIR).deleteDirectory(true);
@@ -138,6 +145,8 @@ function clearPendingUpdate(){
 };
 
 function downloadUpdate(bundleTimestamp,success){
+	console.log('CARMIFY: Downloading bundle: ' + bundleTimestamp);
+
     var osPart = 'ios'; 
     if(Titanium.Platform.osname === 'android'){
         osPart = 'android';
@@ -147,7 +156,7 @@ function downloadUpdate(bundleTimestamp,success){
 	xhr.setTimeout(30000);
 	xhr.onload=function(e) {
 		try {
-			log.info("Unpacking new production bundle: " + name);
+			console.log('CARMIFY: Unpacking new production bundle: ' + DOWNLOAD_DIR);
 			var zip_file = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, DOWNLOAD_DIR + '.zip');
 			zip_file.write(this.responseData);
 			// Prepare path
@@ -162,13 +171,13 @@ function downloadUpdate(bundleTimestamp,success){
 			zip_file.deleteFile();
 			success();
 		} catch (e) {
-			log.error(utils.extractExceptionData(e));
+			console.log('CARMIFY: WARN - Error unpacking bundle: ' + bundleTimestamp +" - " +JSON.stringify(e));
 		}
 	};
 	xhr.onerror = function(e){
-		log.error(utils.extractExceptionData(e));
+		console.log('CARMIFY: WARN - Error downloading bundle: ' + bundleTimestamp +" - " +JSON.stringify(e));
 	};
-	xhr.open('GET', url);
+	xhr.open('GET', updateUrl);
 	xhr.send();
 };
 
@@ -177,7 +186,8 @@ function downloadUpdate(bundleTimestamp,success){
  * This function will: 
  * - clone the app and patch it with the update in the download dir, please ensure this is only called if an update actually exists!
  **/
-function prepareUpdate(){		
+function prepareUpdate(bundleTimestamp){		
+	console.log('CARMIFY: preparing update');
  	var downloadDirectory  = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, DOWNLOAD_DIR);
  	if (downloadDirectory.exists()){
 	    //first prepare a clone of the current version 
@@ -197,6 +207,7 @@ function prepareUpdate(){
  * - make a copy of the app in the applicationDataDirectory in a provided directory
  **/
 function createAppClone(dir){
+	console.log('CARMIFY: cloning app to '+dir);
     var backupDir = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,dir);
     var sourceDir  =Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,APP_NAME);
     if (backupDir.exists()) {
@@ -213,6 +224,7 @@ function createAppClone(dir){
  * This function will calculate the delta diff of the update and apply all required changes to the standby folder 
  **/
 function applyPatch(standby, update){
+	console.log('CARMIFY: Applying patch to ' +standby);
 	var diff=compareManifests(standby, update);
 	if (diff) {
 		var standbyDirectory  = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, standby);
@@ -233,6 +245,8 @@ function applyPatch(standby, update){
 		copyFile(MANIFEST_FILE, updateDirectory, standbyDirectory);
 		//finally delete the update directory 
 		updateDirectory.deleteDirectory(true);
+	} else {
+		console.log('CARMIFY: WARN - no diff to apply patch!');
 	}
 };
 
@@ -240,6 +254,7 @@ function applyPatch(standby, update){
  * This function will switch in the prepared update and restart the app 
  **/
 function applyUpdate(){
+	console.log('CARMIFY: Applying update');
     if(isUpdateReady()){
 		//Delete the app
 		setUpdateReady(false);
@@ -247,7 +262,10 @@ function applyUpdate(){
 		Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,STANDBY_DIR).rename(APP_NAME);;
 		//update bundle version
 		setBundleVersion(readBundleVersion());
+		console.log('CARMIFY: Relaunching app...');
 		TiShadow.launchApp(APP_NAME);
+	} else {
+		console.log('CARMIFY: WARN - no update ready to apply');
 	}
 }
 
@@ -278,10 +296,10 @@ function getLatestUpdateBundleVersion(toggles) {
 };
 
 function compareManifests(current, updated){
+	console.log('CARMIFY: comparing manifests : '+current+' & '+updated);
     var currentManifestFile = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory + "/" + current,MANIFEST_FILE);
     var updatedManifestFile = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory + "/" + updated,MANIFEST_FILE);
     if(currentManifestFile.exists() && updatedManifestFile.exists()){
-        console.log('Process manifest');
         var currentText = currentManifestFile.read().text;
         var updatedText = updatedManifestFile.read().text;
 

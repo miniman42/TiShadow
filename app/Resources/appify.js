@@ -27,10 +27,11 @@ if (devMode===true){
 	  room : "{{room}}",
 	  name : Ti.Platform.osname + ", " + Ti.Platform.version + ", " + Ti.Platform.address
 	});
-	console.log("Running in dev mode...");
+	console.log("CARMIFY: Running in dev mode...");
 } else {
-	console.log("Running in production mode...");
+	console.log("CARMIFY: Running in production mode...");
 	management.start();
 }
 
+console.log('CARMIFY: Launching app...');
 TiShadow.launchApp(path_name);
