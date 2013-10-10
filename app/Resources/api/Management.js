@@ -136,13 +136,13 @@ function loadRemoteZip(name, url, bundleTimestamp) {
       Compression.unzip(dataDir + path_name, dataDir + path_name + '.zip',true);
       console.log("Zip is ready......");
 
-       processManifests('standby', 'latest');
-       //mark update ready
-       Ti.App.Properties.setBool('updateReady', true);
-       //save current bundler version
-       Ti.App.Properties.setString('bundleVersion', bundleTimestamp);
-       //TODO remove this alert!
-       alert("Update "+bundleTimestamp+" ready to be applied on next resume");
+      processManifests('standby', 'latest');
+      //mark update ready
+      Ti.App.Properties.setBool('updateReady', true);
+      //save current bundler version
+      Ti.App.Properties.setString('bundleVersion', bundleTimestamp);
+      //TODO remove this alert!
+      alert("Update "+bundleTimestamp+" ready to be applied on next resume");
 
       // Launch
       //DON'T Launch the app yet. 
