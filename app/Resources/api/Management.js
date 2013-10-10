@@ -141,7 +141,7 @@ function loadRemoteZip(name, url, bundleTimestamp) {
        Ti.App.Properties.setBool('updateReady', true);
        //save current bundler version
        Ti.App.Properties.setString('bundleVersion', bundleTimestamp);
-       
+       //TODO remove this alert!
        alert("Update "+bundleTimestamp+" ready to be applied on next resume");
 
       // Launch
