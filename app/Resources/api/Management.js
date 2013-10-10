@@ -5,14 +5,14 @@ var TiShadow = require("/api/TiShadow"),
     utils = require('/api/Utils'), 
     manifestHandler = require('/api/ManifestHandler');
 
+var BUNDLE_TIMESTAMP = "currentBundleTimestamp", 
+    MIN_APP_REVISION = "minAppRevision", 
+    MAX_APP_REVISION = "maxAppRevision";
+
 
 //start the management process, waiting for production updates
 exports.start = function(options){
     
-    var BUNDLE_TIMESTAMP = "currentBundleTimestamp", 
-        MIN_APP_REVISION = "minAppRevision", 
-        MAX_APP_REVISION = "maxAppRevision";
-
     //Feature toggles come in on Launch or resume of the internal app and when there is any change to them in the lifecycle of the app.
     Ti.App.addEventListener("carma:feature.toggles", function(toggles){ 
         console.log('CARMIFY: Received feature toggles');
