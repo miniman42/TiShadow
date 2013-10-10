@@ -22,19 +22,16 @@ if (appRevision!==installedRevision){
 	if (existing.exists()) {
 		//delete the previous existing extracted resources
 		existing.deleteDirectory(true);
-		alert("removed existing directory");
 	}
 	//create the target directory
 	Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, path_name).createDirectory();
-	alert("created target dir and unzipping...");
 	Compression.unzip(Ti.Filesystem.applicationDataDirectory + "/" + path_name, Ti.Filesystem.resourcesDirectory + "/" + path_name + '.zip',true);
 	//update the installed revision
 	Ti.App.Properties.setString('installed.revision',appRevision);	
 	
 	//before we start we need to clear any pending update tasks against the previous revison.
 	var updateReady = Ti.App.Properties.getBool('updateReady');
-	if (updatedReady){
-	    alert("removing pending update task...");
+	if (updateReady){
 	    Ti.App.Properties.setBool('updateReady', false);
 		Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,'standby').deleteDirectory(true);
 	}
@@ -42,7 +39,6 @@ if (appRevision!==installedRevision){
 	//finally we need to set the bundleVersion of the newly installed manifest.
 	var installedManifestFile = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory + '/carma-splinter/manifest.mf');
 	Ti.App.Properties.setString('bundleVersion', installedManifestFile.read().text.split(/\r\n|\r|\n/g)[0].split(':')[1]);
-	//Update is now complete
 }
 
 
