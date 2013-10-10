@@ -14,10 +14,10 @@ var BUNDLE_TIMESTAMP = "currentBundleTimestamp",
 exports.start = function(options){
     
     //Feature toggles come in on Launch or resume of the internal app and when there is any change to them in the lifecycle of the app.
-    Ti.App.addEventListener("carma:feature.toggles", function(toggles){ 
+    Ti.App.addEventListener("carma:feature.toggles", function(evt){ 
         console.log('CARMIFY: Received feature toggles');
 	    var localBundleVersion = getLocalBundleVersion();  
-		var latestBundleVersion=getLatestBundleVersion(toggles);
+		var latestBundleVersion=getLatestBundleVersion(evt.data);
      	if(localBundleVersion < latestBundleVersion){
    			//Update if required
    			getLatestBundle(latestBundleVersion);
