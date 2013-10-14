@@ -17,16 +17,6 @@ var BUNDLE_TIMESTAMP = "currentBundleTimestamp",
 var _toggleQueue = [],
 	isProcessingToggles=false;
 
-//by default allow updates at any time.
-var defaultUpdateHandler = function(){
-	//An update handlers job is to control if an update can be applied when one is ready
-	//Simply return true to allow the app update or false to prevent it from updating.
-	console.log('CARMIFY: Default update handler allowing update...');
-	return true;
-};
-
-var updateHandler;
-
 //This function makes sure that the local filesystem is setup correctly to allow successful app launches and handling of native
 //revision updates.  It must be called prior to launching the application with TIShadow or calling start on the module itself
 exports.initialise = function(name){
@@ -42,15 +32,11 @@ exports.initialise = function(name){
 		//need to install the new revision
 		installAppRevisionBundle();		
 	}
-	
-	updateHandler=defaultUpdateHandler;
-	
 };
 
 //start the management process, waiting for production updates and applying them at appropriate times
 exports.start = function(options){
     
-
     //Feature toggles come in on Launch or resume of the internal app and when there is any change to them in the lifecycle of the app.
     Ti.App.addEventListener("carma:feature.toggles", function(evt){ 
         console.log('CARMIFY: Received feature toggles');
@@ -61,39 +47,26 @@ exports.start = function(options){
 		}
     });
 
-    Ti.App.addEventListener("carma:life.cycle.launch", function(){ 
-        console.log('CARMIFY: App Launched');
+	//Apply events come in when the app decides its ok to process the update and reload.
+    Ti.App.addEventListener("carma:mangement.update.apply", function(){ 
+        console.log('CARMIFY: Apply Update Requested');
 		if (isUpdateReady() && (!isProcessingToggles)){
             applyUpdate();	
         }
     });
-    
-    Ti.App.addEventListener("carma:life.cycle.resume", function(){ 
-        console.log('CARMIFY: App Resumed');
-		if (isUpdateReady() && (!isProcessingToggles)){
-            applyUpdate();
-        }
-    });
-    
+
 };
 
-//allows any controller to set a function that will control if an update can be applied
-//NOTE: a view controller should ALWAYS register a handler so as to prevent untimely updates.
-exports.setUpdateHandler = function (handler){
-	if (handler){
-		updateHandler=handler;
-	}
-};
+//fired when an update is ready to be applied this will occur when an update has been prepared.  
+//It can also fire on startup/resume if an update is still pending because toggles will be delivered then also.
+function notifyUpdate(){
+	Ti.App.fireEvent("carma:management.update.ready", { data : { version : getUpdateVersion() }});
+}
 
-//allows any controller to apply a pending update should one exist, but only if we are not currently
-//preparing a pending update.  If this is the case then an update will be applied when the update is 
-//prepared and as such the registered update handler will be called.
-exports.update = function (){
-	if (isUpdateReady() && (!isProcessingToggles)){
-		applyUpdate();
-	}
-};
-
+//This is fired after an updae has been successfully applied.
+function notifyUpdated(){
+	Ti.App.fireEvent("carma:management.update.complete", { data : { version : getBundleVersion }});
+}
 
 function getAppRevision(){
 	return Ti.App.Properties.getString('carma.revision');
@@ -112,9 +85,16 @@ function isUpdateReady(){
 	return Ti.App.Properties.getBool('updateReady');
 };
 
-function setUpdateReady(ready){
+function getUpdateVersion(){
+	return Number(Ti.App.Properties.getString('updateVersion')); 
+};
+
+function setUpdateReady(ready,version){
 	console.log('CARMIFY: set updateReady: '+ready);
 	Ti.App.Properties.setBool('updateReady',ready);
+	if (version) {
+		Ti.App.Properties.setString('updateVersion',version);
+	}
 };
 
 function getBundleVersion(){
@@ -130,9 +110,8 @@ function setBundleVersion(version){
  * This function will: 
  * - read the currently installed bundle manifest and return its creation timestamp
  **/
-function readBundleVersion(app){
-	app = (app)? app : APP_NAME;
-	var installedManifestFile = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory + '/' + app + '/' +MANIFEST_FILE);
+function readBundleVersion(){
+	var installedManifestFile = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory + '/' + APP_NAME + '/' +MANIFEST_FILE);
 	//grab first line of the manifest and parse the manifest version
 	return Number(installedManifestFile.read().text.split(/\r\n|\r|\n/g)[0].split(':')[1]);
 };
@@ -189,7 +168,7 @@ function flushToggleQueue() {
 		console.log("CARMIFY: Toggle queue empty");
 		isProcessingToggles = false;
 		if(isUpdateReady()){
-			applyUpdate();
+			notifyUpdate();
 		}
 	}
 };
@@ -200,9 +179,9 @@ function processToggles(toggles,callback){
 	var latestBundleVersion=getLatestUpdateBundleVersion(toggles[0].data);
  	if(localBundleVersion < latestBundleVersion) {
 		//Update required
-		if (isUpdateReady() && (readBundleVersion(STANDBY_DIR)===latestBundleVersion)){
+		if (isUpdateReady() && (getUpdateVersion()===latestBundleVersion)){
 			//don't download the same bundle twice!
-			console.log('CARMIFY: Not downloading bundle as it is already ready to be applied: ' + latestBundleVersion);
+			console.log('CARMIFY: Not downloading bundle as it is already pending: ' + latestBundleVersion);
 			callback();
 		} else { 
 			clearPendingUpdate(); //clear any pending update before downloading a new update.
@@ -283,7 +262,7 @@ function prepareUpdate(bundleTimestamp,callback){
 		//generate diff and apply
 		applyPatch(STANDBY_DIR, DOWNLOAD_DIR);
 		//mark update ready
-		setUpdateReady(true);
+		setUpdateReady(true,bundleTimestamp);
 	} 
 	if (callback) {
 		callback();
@@ -345,18 +324,15 @@ function applyPatch(standby, update){
 function applyUpdate(){
 	console.log('CARMIFY: Applying update');
     if(isUpdateReady()){
-		if (updateHandler()){
-			//Delete the app
-			setUpdateReady(false);
-			Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,APP_NAME).deleteDirectory(true);
-			Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,STANDBY_DIR).rename(APP_NAME);;
-			//update bundle version
-			setBundleVersion(readBundleVersion());
-			console.log('CARMIFY: Relaunching app... bundle:'+getBundleVersion());
-			TiShadow.launchApp(APP_NAME);
-		} else {
-			console.log('CARMIFY: Pending update blocked by current update handler');
-		}
+		//Delete the app
+		setUpdateReady(false);
+		Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,APP_NAME).deleteDirectory(true);
+		Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,STANDBY_DIR).rename(APP_NAME);;
+		//update bundle version
+		setBundleVersion(getUpdateVersion());
+		console.log('CARMIFY: Relaunching app... bundle:'+getBundleVersion());
+		TiShadow.launchApp(APP_NAME);
+		notifyUpdated();
 	} else {
 		console.log('CARMIFY: WARN - no update ready to apply');
 	}
