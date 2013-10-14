@@ -65,7 +65,7 @@ function notifyUpdate(){
 
 //This is fired after an updae has been successfully applied.
 function notifyUpdated(){
-	Ti.App.fireEvent("carma:management.update.complete", { data : { version : getBundleVersion }});
+	Ti.App.fireEvent("carma:management.update.complete", { data : { version : getBundleVersion() }});
 }
 
 function getAppRevision(){
