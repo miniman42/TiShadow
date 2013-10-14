@@ -12,9 +12,20 @@ var BUNDLE_TIMESTAMP = "currentBundleTimestamp",
     DOWNLOAD_DIR = 'update',
     MANIFEST_FILE = 'manifest.mf',
     APP_NAME;
-    
-    
-    
+
+//need to make sure app update events do not overlap as its possible to trigger these multiple times.   
+var _toggleQueue = [],
+	isProcessingToggles=false;
+
+//by default allow updates at any time.
+var defaultUpdateHandler = function(){
+	//An update handlers job is to control if an update can be applied when one is ready
+	//Simply return true to allow the app update or false to prevent it from updating.
+	console.log('CARMIFY: Default update handler allowing update...');
+	return true;
+};
+
+var updateHandler;
 
 //This function makes sure that the local filesystem is setup correctly to allow successful app launches and handling of native
 //revision updates.  It must be called prior to launching the application with TIShadow or calling start on the module itself
@@ -31,37 +42,58 @@ exports.initialise = function(name){
 		//need to install the new revision
 		installAppRevisionBundle();		
 	}
+	
+	updateHandler=defaultUpdateHandler;
+	
 };
 
 //start the management process, waiting for production updates and applying them at appropriate times
 exports.start = function(options){
     
+
     //Feature toggles come in on Launch or resume of the internal app and when there is any change to them in the lifecycle of the app.
     Ti.App.addEventListener("carma:feature.toggles", function(evt){ 
         console.log('CARMIFY: Received feature toggles');
-	    var localBundleVersion = getBundleVersion();  
-		var latestBundleVersion=getLatestUpdateBundleVersion(evt.data);
-     	if(localBundleVersion < latestBundleVersion){
-   			//Update required
-   			downloadUpdate(latestBundleVersion,function() { prepareUpdate(latestBundleVersion); });
+		_toggleQueue.push([evt]);
+		if (!isProcessingToggles) {
+			isProcessingToggles = true;
+			flushToggleQueue();
 		}
     });
 
     Ti.App.addEventListener("carma:life.cycle.launch", function(){ 
         console.log('CARMIFY: App Launched');
-		if (isUpdateReady()){
+		if (isUpdateReady() && (!isProcessingToggles)){
             applyUpdate();	
         }
     });
     
     Ti.App.addEventListener("carma:life.cycle.resume", function(){ 
         console.log('CARMIFY: App Resumed');
-		if (isUpdateReady()){
+		if (isUpdateReady() && (!isProcessingToggles)){
             applyUpdate();
         }
     });
     
 };
+
+//allows any controller to set a function that will control if an update can be applied
+//NOTE: a view controller should ALWAYS register a handler so as to prevent untimely updates.
+exports.setUpdateHandler = function (handler){
+	if (handler){
+		updateHandler=handler;
+	}
+};
+
+//allows any controller to apply a pending update should one exist, but only if we are not currently
+//preparing a pending update.  If this is the case then an update will be applied when the update is 
+//prepared and as such the registered update handler will be called.
+exports.update = function (){
+	if (isUpdateReady() && (!isProcessingToggles)){
+		applyUpdate();
+	}
+};
+
 
 function getAppRevision(){
 	return Ti.App.Properties.getString('carma.revision');
@@ -98,10 +130,11 @@ function setBundleVersion(version){
  * This function will: 
  * - read the currently installed bundle manifest and return its creation timestamp
  **/
-function readBundleVersion(){
-	var installedManifestFile = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory + '/' + APP_NAME + '/' +MANIFEST_FILE);
+function readBundleVersion(app){
+	app = (app)? app : APP_NAME;
+	var installedManifestFile = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory + '/' + app + '/' +MANIFEST_FILE);
 	//grab first line of the manifest and parse the manifest version
-	return installedManifestFile.read().text.split(/\r\n|\r|\n/g)[0].split(':')[1];
+	return Number(installedManifestFile.read().text.split(/\r\n|\r|\n/g)[0].split(':')[1]);
 };
 
 /** 
@@ -140,11 +173,49 @@ function clearPendingUpdate(){
 	console.log('CARMIFY: clearing pending update : '+isUpdateReady());
 	if (isUpdateReady()){
     	setUpdateReady(false);
-		Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,STANDBY_DIR).deleteDirectory(true);
+	}
+	var standby=Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,STANDBY_DIR);
+	if (standby.exists()){
+		standby.deleteDirectory(true);
+	}		
+};
+
+function flushToggleQueue() {
+	console.log("CARMIFY: Flushing Toggles queue...");
+	if (_toggleQueue.length > 0) {
+		// pull the lru event val off the queue and recur till all complete...
+		processToggles(_toggleQueue.shift(),flushToggleQueue);
+	} else {
+		console.log("CARMIFY: Toggle queue empty");
+		isProcessingToggles = false;
+		if(isUpdateReady()){
+			applyUpdate();
+		}
 	}
 };
 
-function downloadUpdate(bundleTimestamp,success){
+function processToggles(toggles,callback){
+	console.log("CARMIFY: Processing toggles");
+	var localBundleVersion = getBundleVersion();  
+	var latestBundleVersion=getLatestUpdateBundleVersion(toggles[0].data);
+ 	if(localBundleVersion < latestBundleVersion) {
+		//Update required
+		if (isUpdateReady() && (readBundleVersion(STANDBY_DIR)===latestBundleVersion)){
+			//don't download the same bundle twice!
+			console.log('CARMIFY: Not downloading bundle as it is already ready to be applied: ' + latestBundleVersion);
+			callback();
+		} else { 
+			clearPendingUpdate(); //clear any pending update before downloading a new update.
+			downloadUpdate(latestBundleVersion,function() { prepareUpdate(latestBundleVersion,callback); }, function() { callback(); });
+		}
+	} else { //in case this update is not applicable we still need to callback;
+		callback();
+	}
+};
+
+
+
+function downloadUpdate(bundleTimestamp,success,fail){
 	console.log('CARMIFY: Downloading bundle: ' + bundleTimestamp);
 
     var osPart = 'ios'; 
@@ -155,27 +226,44 @@ function downloadUpdate(bundleTimestamp,success){
 	var xhr = Ti.Network.createHTTPClient();
 	xhr.setTimeout(30000);
 	xhr.onload=function(e) {
+		var gotBundle=false;
 		try {
 			console.log('CARMIFY: Unpacking new production bundle: ' + DOWNLOAD_DIR);
 			var zip_file = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, DOWNLOAD_DIR + '.zip');
 			zip_file.write(this.responseData);
 			// Prepare path
+	  		
 	  		var target = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, DOWNLOAD_DIR);
-			if (!target.exists()) {
-				target.createDirectory();
+			//clean up any failed previous extraction...
+			if (target.exists()){
+				target.deleteDirectory(true);
 			}
+			Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, DOWNLOAD_DIR).createDirectory();
+			
 			// Extract
 			var dataDir=Ti.Filesystem.applicationDataDirectory + "/";
 			Compression.unzip(dataDir + DOWNLOAD_DIR, dataDir + DOWNLOAD_DIR + '.zip',true);
 			//cleanup the download
 			zip_file.deleteFile();
-			success();
+			gotBundle=true;
 		} catch (e) {
 			console.log('CARMIFY: WARN - Error unpacking bundle: ' + bundleTimestamp +" - " +JSON.stringify(e));
+		}
+		if (gotBundle){
+			if (success){
+				success();
+			}
+		} else {
+			if (fail){
+				fail();
+			}
 		}
 	};
 	xhr.onerror = function(e){
 		console.log('CARMIFY: WARN - Error downloading bundle: ' + bundleTimestamp +" - " +JSON.stringify(e));
+		if (fail){
+			fail();
+		}
 	};
 	xhr.open('GET', updateUrl);
 	xhr.send();
@@ -186,7 +274,7 @@ function downloadUpdate(bundleTimestamp,success){
  * This function will: 
  * - clone the app and patch it with the update in the download dir, please ensure this is only called if an update actually exists!
  **/
-function prepareUpdate(bundleTimestamp){		
+function prepareUpdate(bundleTimestamp,callback){		
 	console.log('CARMIFY: preparing update');
  	var downloadDirectory  = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, DOWNLOAD_DIR);
  	if (downloadDirectory.exists()){
@@ -196,8 +284,9 @@ function prepareUpdate(bundleTimestamp){
 		applyPatch(STANDBY_DIR, DOWNLOAD_DIR);
 		//mark update ready
 		setUpdateReady(true);
-		//TODO remove this alert!
-		alert("Update "+bundleTimestamp+" ready to be applied on next resume");
+	} 
+	if (callback) {
+		callback();
 	}
 };
 
@@ -256,14 +345,18 @@ function applyPatch(standby, update){
 function applyUpdate(){
 	console.log('CARMIFY: Applying update');
     if(isUpdateReady()){
-		//Delete the app
-		setUpdateReady(false);
-		Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,APP_NAME).deleteDirectory(true);
-		Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,STANDBY_DIR).rename(APP_NAME);;
-		//update bundle version
-		setBundleVersion(readBundleVersion());
-		console.log('CARMIFY: Relaunching app...');
-		TiShadow.launchApp(APP_NAME);
+		if (updateHandler()){
+			//Delete the app
+			setUpdateReady(false);
+			Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,APP_NAME).deleteDirectory(true);
+			Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,STANDBY_DIR).rename(APP_NAME);;
+			//update bundle version
+			setBundleVersion(readBundleVersion());
+			console.log('CARMIFY: Relaunching app... bundle:'+getBundleVersion());
+			TiShadow.launchApp(APP_NAME);
+		} else {
+			console.log('CARMIFY: Pending update blocked by current update handler');
+		}
 	} else {
 		console.log('CARMIFY: WARN - no update ready to apply');
 	}
@@ -314,10 +407,8 @@ function copyDir(destinationPointer, folder2Copy, name) {
     var destination;
     if(destinationPointer == "") {
         destinationPointer = Titanium.Filesystem.getFile(Titanium.Filesystem.applicationDataDirectory);
-        destination = Titanium.Filesystem.getFile(destinationPointer.nativePath, name);
-    } else {
-        destination = Titanium.Filesystem.getFile(destinationPointer.nativePath, name);
-    }
+    } 
+    destination = Titanium.Filesystem.getFile(destinationPointer.nativePath, name);
  
     if(!destination.exists()) {
         destination.createDirectory();
@@ -327,7 +418,7 @@ function copyDir(destinationPointer, folder2Copy, name) {
     var i = 0;
     while(i<arr.length) { 
         var sourceFile  = Titanium.Filesystem.getFile(folder2Copy.nativePath, arr[i]);
-        if(sourceFile.extension() == null) {
+        if(sourceFile.isDirectory()) {
             var destPointer = Titanium.Filesystem.getFile(destinationPointer.nativePath,name);
             Titanium.API.info(destPointer.nativePath);
             copyDir(destPointer, sourceFile, arr[i]);
