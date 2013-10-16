@@ -53,15 +53,27 @@ exports.connect = function(o) {
     require('/api/PlatformRequire').eval(data);
   });
   
+  // *** Carma Update Start ***
+  // Change how bundles are handled when they are available from TiShadow Server in dev mode
+  var updateControl=(o.updateControl)? true : false;
+  // Refactored socket event handler to allow for controlled and uncontrolled dev mode updates
   socket.on('bundle', function(data) {
-    if (data.platform && data.platform !== osname && data.platform !== platform) {
-      return;
+    if (updateControl) {
+    	var url=(o.proto || "http") + "://" + o.host + ":" + o.port + "/bundle" + "/" + room + "/" + Ti.App.Properties.getString("tishadow:uuid");
+    	//Fire event to Management
+    	Ti.App.fireEvent("carma:tishadow.update.ready",{data:{url: url}});
+    } else {
+	    if (data.platform && data.platform !== osname && data.platform !== platform) {
+	      return;
+	    }
+	    if(data.locale) {
+	      require("/api/Localisation").locale = data.locale;
+	    }
+	    loadRemoteZip(data.name, (o.proto || "http") + "://" + o.host + ":" + o.port + "/bundle", data, version_property);
     }
-    if(data.locale) {
-      require("/api/Localisation").locale = data.locale;
-    }
-    loadRemoteZip(data.name, (o.proto || "http") + "://" + o.host + ":" + o.port + "/bundle", data, version_property);
   });
+  // *** Carma Update End ***
+  
 
   socket.on('clear', function(data) {
     if (data.platform && data.platform !== osname && data.platform !== platform) {

@@ -5,8 +5,7 @@
 
 Titanium.App.idleTimerDisabled = true;
 
-var TiShadow = require("/api/TiShadow"),
-    management = require('/api/Management'),
+var management = require('/api/Management'),
 	utils = require('/api/Utils');
 
 
@@ -17,21 +16,4 @@ var devMode=("{{type}}" === "dev" ? true : false);
 //handle the setting up of resources for new/updated apps
 //must be called in all modes
 management.initialise(path_name);
-
-if (devMode===true){
-	//Call home
-	TiShadow.connect({
-	  proto: "{{proto}}",
-	  host : "{{host}}",
-	  port : "{{port}}",
-	  room : "{{room}}",
-	  name : Ti.Platform.osname + ", " + Ti.Platform.version + ", " + Ti.Platform.address
-	});
-	console.log("CARMIFY: Running in dev mode...");
-} else {
-	console.log("CARMIFY: Running in production mode...");
-	management.start();
-}
-
-console.log('CARMIFY: Launching app...');
-TiShadow.launchApp(path_name);
+management.start({dev: devMode, proto: "{{proto}}",host : "{{host}}",port : "{{port}}",room : "{{room}}"});

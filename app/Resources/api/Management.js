@@ -14,8 +14,8 @@ var BUNDLE_TIMESTAMP = "currentBundleTimestamp",
     APP_NAME;
 
 //need to make sure app update events do not overlap as its possible to trigger these multiple times.   
-var _toggleQueue = [],
-	isProcessingToggles=false;
+var _updateQueue = [],
+	isProcessingUpdateQueue=false;
 
 //This function makes sure that the local filesystem is setup correctly to allow successful app launches and handling of native
 //revision updates.  It must be called prior to launching the application with TIShadow or calling start on the module itself
@@ -36,30 +36,56 @@ exports.initialise = function(name){
 
 //start the management process, waiting for production updates and applying them at appropriate times
 exports.start = function(options){
+	if (options.dev===true){
+		//Note the connect Methods registered "bundle" handler has been updated to support the Carma update mechanism
+		TiShadow.connect({
+			proto: options.proto,
+			host : options.host,
+			port : options.port,
+			room : options.room,
+			name : Ti.Platform.osname + ", " + Ti.Platform.version + ", " + Ti.Platform.address,
+			updateControl : true
+		});
+		Ti.App.addEventListener("carma:tishadow.update.ready",function(evt){
+	        console.log('CARMIFY: Received DEV update event');
+			pushUpdate(evt);
+		});
+		console.log("CARMIFY: Running in 'dev' mode...");
+	} else {
+		console.log("CARMIFY: Running in 'production' mode...");
+	}
     
     //Feature toggles come in on Launch or resume of the internal app and when there is any change to them in the lifecycle of the app.
     Ti.App.addEventListener("carma:feature.toggles", function(evt){ 
         console.log('CARMIFY: Received feature toggles');
-		_toggleQueue.push([evt]);
-		if (!isProcessingToggles) {
-			isProcessingToggles = true;
-			flushToggleQueue();
-		}
+		pushUpdate(evt);
     });
 
 	//Apply events come in when the app decides its ok to process the update and reload.
     Ti.App.addEventListener("carma:mangement.update.apply", function(){ 
-        console.log('CARMIFY: Apply Update Requested');
-		if (isUpdateReady() && (!isProcessingToggles)){
+        console.log('CARMIFY: Apply Update Requested by client');
+		if (isUpdateReady() && (!isProcessingUpdateQueue)){
             applyUpdate();	
         }
     });
 
+	console.log('CARMIFY: Launching app...');
+	TiShadow.launchApp(path_name);
 };
+
+//This adds an update event to the queue of pending update triggers and flushes it if not already processing them.
+function pushUpdate(evt){
+	_updateQueue.push(evt);
+	if (!isProcessingUpdateQueue) {
+		isProcessingUpdateQueue = true;
+		flushUpdateQueue();
+	}
+}
 
 //fired when an update is ready to be applied this will occur when an update has been prepared.  
 //It can also fire on startup/resume if an update is still pending because toggles will be delivered then also.
 function notifyUpdate(){
+    console.log('CARMIFY: Notifying client (UX..) listeners that an update is ready');
 	Ti.App.fireEvent("carma:management.update.ready", { data : { version : getUpdateVersion() }});
 }
 
@@ -110,8 +136,9 @@ function setBundleVersion(version){
  * This function will: 
  * - read the currently installed bundle manifest and return its creation timestamp
  **/
-function readBundleVersion(){
-	var installedManifestFile = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory + '/' + APP_NAME + '/' +MANIFEST_FILE);
+function readBundleVersion(dirname){
+	var path=(dirname)?dirname:APP_NAME;
+	var installedManifestFile = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory + '/' +  path + '/' +MANIFEST_FILE);
 	//grab first line of the manifest and parse the manifest version
 	return Number(installedManifestFile.read().text.split(/\r\n|\r|\n/g)[0].split(':')[1]);
 };
@@ -159,49 +186,66 @@ function clearPendingUpdate(){
 	}		
 };
 
-function flushToggleQueue() {
-	console.log("CARMIFY: Flushing Toggles queue...");
-	if (_toggleQueue.length > 0) {
-		// pull the lru event val off the queue and recur till all complete...
-		processToggles(_toggleQueue.shift(),flushToggleQueue);
+function flushUpdateQueue() {
+	console.log("CARMIFY: Flushing update queue...");
+	if (_updateQueue.length > 0) {
+		// pull the lru event val off the queue
+		var update=_updateQueue.shift();
+		//callback will recur....
+		processUpdate(update,flushUpdateQueue);
 	} else {
-		console.log("CARMIFY: Toggle queue empty");
-		isProcessingToggles = false;
+		console.log("CARMIFY: Update queue empty");
+		isProcessingUpdateQueue = false;
 		if(isUpdateReady()){
 			notifyUpdate();
 		}
 	}
 };
 
-function processToggles(toggles,callback){
-	console.log("CARMIFY: Processing toggles");
+function processUpdate(update,callback){
+	console.log("CARMIFY: Processing queued update event");
 	var localBundleVersion = getBundleVersion();  
-	var latestBundleVersion=getLatestUpdateBundleVersion(toggles[0].data);
- 	if(localBundleVersion < latestBundleVersion) {
-		//Update required
-		if (isUpdateReady() && (getUpdateVersion()===latestBundleVersion)){
-			//don't download the same bundle twice!
-			console.log('CARMIFY: Not downloading bundle as it is already pending: ' + latestBundleVersion);
+	var latestBundleVersion;
+
+	if (update.type === "carma:feature.toggles"){
+		console.log("CARMIFY: Update triggered by feature toggles");
+		latestBundleVersion=getLatestUpdateBundleVersion(update.data);
+	 	if(localBundleVersion < latestBundleVersion) {
+			//Update required
+			if (isUpdateReady() && (getUpdateVersion()===latestBundleVersion)){
+				//don't download the same bundle twice!
+				console.log('CARMIFY: Not downloading bundle as it is already pending: ' + latestBundleVersion);
+				callback();
+			} else { 
+				clearPendingUpdate(); //clear any pending update before downloading a new update.
+				downloadUpdate(latestBundleVersion,function() { prepareUpdate(latestBundleVersion,callback); }, function() { callback(); });
+			}
+		} else { //in case this update is not applicable we still need to callback;
+			console.log("CARMIFY: Not updating as local bundle version is newest");
 			callback();
-		} else { 
-			clearPendingUpdate(); //clear any pending update before downloading a new update.
-			downloadUpdate(latestBundleVersion,function() { prepareUpdate(latestBundleVersion,callback); }, function() { callback(); });
 		}
-	} else { //in case this update is not applicable we still need to callback;
-		callback();
+	} else if (update.type === "carma:tishadow.update.ready"){
+		console.log("CARMIFY: Update triggered by DEV update - NOTE: min/max carma.revision is not considered for dev mode updates!");
+		latestBundleVersion="DEV";
+		clearPendingUpdate(); //clear any pending update before downloading a new update.
+		downloadUpdate(latestBundleVersion,function() { prepareUpdate(latestBundleVersion,callback); }, function() { callback(); },update.data.url);
 	}
 };
 
 
-
-function downloadUpdate(bundleTimestamp,success,fail){
+function downloadUpdate(bundleTimestamp,success,fail,url){
 	console.log('CARMIFY: Downloading bundle: ' + bundleTimestamp);
-
-    var osPart = 'ios'; 
-    if(Titanium.Platform.osname === 'android'){
-        osPart = 'android';
-    }
-    var updateUrl="https://developer.avego.com/bundles/delta.php?os="+osPart+"&src="+getBundleVersion()+"&tgt="+bundleTimestamp;
+    var updateUrl;
+	//use provided url if present...
+	if (url){ 
+		updateUrl=url;
+	} else { //otherwise construct CDN url...
+	    var osPart = 'ios'; 
+	    if(Titanium.Platform.osname === 'android'){
+	        osPart = 'android';
+	    }
+	    updateUrl="https://developer.avego.com/bundles/delta.php?os="+osPart+"&src="+getBundleVersion()+"&tgt="+bundleTimestamp;
+	}
 	var xhr = Ti.Network.createHTTPClient();
 	xhr.setTimeout(30000);
 	xhr.onload=function(e) {
@@ -210,8 +254,8 @@ function downloadUpdate(bundleTimestamp,success,fail){
 			console.log('CARMIFY: Unpacking new production bundle: ' + DOWNLOAD_DIR);
 			var zip_file = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, DOWNLOAD_DIR + '.zip');
 			zip_file.write(this.responseData);
+
 			// Prepare path
-	  		
 	  		var target = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, DOWNLOAD_DIR);
 			//clean up any failed previous extraction...
 			if (target.exists()){
@@ -262,6 +306,11 @@ function prepareUpdate(bundleTimestamp,callback){
 		//generate diff and apply
 		applyPatch(STANDBY_DIR, DOWNLOAD_DIR);
 		//mark update ready
+		if (bundleTimestamp==="DEV") {
+			//Dev mode updates must have their timestamp read from the manifest file
+			console.log('CARMIFY: reading "DEV" bundle version');
+			bundleTimestamp=readBundleVersion(STANDBY_DIR);
+		}
 		setUpdateReady(true,bundleTimestamp);
 	} 
 	if (callback) {
@@ -269,6 +318,9 @@ function prepareUpdate(bundleTimestamp,callback){
 	}
 };
 
+function isNumber(n) {
+  return !isNaN(parseFloat(n)) && isFinite(n);
+}
 
 /** 
  * This function will: 
