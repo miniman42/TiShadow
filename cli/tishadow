@@ -58,6 +58,7 @@ program.command('run')
   .option('-r, --room <room>', 'server room')
   .option('-c, --ticaster', 'connect to ticaster')
   .option('-P, --platform <platform>', 'target platform')
+  .option('-f, --forceUpdate', 'indicate that this update should be forcefully applied when received by a device')
   .action(compiler);
 
 program.command('deploy')
@@ -72,6 +73,7 @@ program.command('bundle')
   .description('prepare a TiShadow bundle without deploying it'.grey)
   .option('-j, --jshint', 'analyse code with JSHint')
   .option('-t, --timestamp <timestamp>', 'set the timestamp (UTC Seconds) in the created bundle manifest')
+  .option('-f, --forceUpdate', 'indicate that this update should be forcefully applied when received by a device')
   .action(compiler);
 
 program.command('spec')

@@ -134,7 +134,7 @@ function setBundleVersion(version){
 
 /** 
  * This function will: 
- * - read the currently installed bundle manifest and return its creation timestamp
+ * - read the bundle manifest in the provided dir if provided or the installed app if not and return its creation timestamp
  **/
 function readBundleVersion(dirname){
 	var path=(dirname)?dirname:APP_NAME;
@@ -142,6 +142,18 @@ function readBundleVersion(dirname){
 	//grab first line of the manifest and parse the manifest version
 	return Number(installedManifestFile.read().text.split(/\r\n|\r|\n/g)[0].split(':')[1]);
 };
+
+/** 
+ * This function will: 
+ * - read the bundle manifest in the provided dir if provided or the installed app if not and return if it should be forcefully applied
+**/
+function readBundleForceUpdate(dirname){
+	var path=(dirname)?dirname:APP_NAME;
+	var installedManifestFile = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory + '/' +  path + '/' +MANIFEST_FILE);
+	//grab second line of the manifest and parse the ForceUpdate value
+	return (installedManifestFile.read().text.split(/\r\n|\r|\n/g)[1].split(':')[1])==="true";
+};
+
 
 /** 
  * This function will: 
@@ -197,7 +209,12 @@ function flushUpdateQueue() {
 		console.log("CARMIFY: Update queue empty");
 		isProcessingUpdateQueue = false;
 		if(isUpdateReady()){
-			notifyUpdate();
+			if (readBundleForceUpdate(STANDBY_DIR)){
+				//force the update without notification if indicated in the manifest.
+				applyUpdate();
+			} else {
+				notifyUpdate();
+			}					
 		}
 	}
 };
@@ -354,6 +371,15 @@ function applyPatch(standby, update){
 			var fileToDelete = Ti.Filesystem.getFile(standbyDirectory.nativePath, diff.filesToDelete[i]);
 			if(fileToDelete.exists()){
 				fileToDelete.deleteFile();
+				
+				//if last file in dir we should remove dir.
+				var paths = fileToDelete.nativePath.split('/');
+				var filename = paths[paths.length-1];
+				var path = fileToDelete.nativePath.substr(0,fileToDelete.nativePath.length-filename.length);
+				var dirList = Ti.Filesystem.getFile(path).getDirectoryListing();
+				if (dirList && dirList.length==0){
+					console.log('CARMIFY: Removing now empty directory: ' +path);
+				} 
 			}
 		}
 		for(var i= 0; i< diff.filesToAdd.length; i++){
@@ -460,11 +486,17 @@ function copyDir(destinationPointer, folder2Copy, name) {
 
 function copyFile(filename, sourceDirectory, destinationDirectory) {
         var destPath = '/';       
+        var subdir;
         if(filename.indexOf('/') !== -1){
           var paths = filename.split('/');
           destPath = '/';
+          
           for(var j = 0; j < paths.length-1; j++){
             destPath =  destPath + paths[j] + "/";
+            subdir=Ti.Filesystem.getFile(destinationDirectory.nativePath + destPath);
+            if (!subdir.exists()){
+            	subdir.createDirectory();
+            }
           } 
           filename = paths[paths.length-1];
         }

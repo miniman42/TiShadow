@@ -47,7 +47,7 @@ function prepare(src, dst, callback) {
 function prepareFiles(index, file_list, isSpec, callback) {
   if (index===0){
 	//initialise manifset contents
-  	manifest = "#Created:"+config.timestamp+"\n";
+  	manifest = "#Created:"+config.timestamp+"\n#ForceUpdate:"+config.forceUpdate+"\n";
   	console.log("Bundle Meta - "+manifest);
   }
   if (file_list.files.length === index) {
