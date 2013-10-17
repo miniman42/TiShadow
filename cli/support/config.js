@@ -111,6 +111,7 @@ config.init = function(env) {
   config.isShadowModulesIncluded = !env.excludeshadowmodules;
   config.timestamp = env.timestamp || Math.round(new Date().getTime()/1000);
   config.forceUpdate = env.forceUpdate;	
+  config.screenshot_path = env.screenshotPath || "/tmp";
   config.internalIP = env.internalIp;
   config.isLongPolling = env.longPolling;
   config.isManageVersions = env.manageVersions;

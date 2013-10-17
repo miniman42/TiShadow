@@ -74,8 +74,8 @@ exports.file = function(extension) {
   platform_path =  base + (os === "android" ? "android" : "iphone") + "/" + extension;
   var extension_parts = extension.split("/");
   var needsJS = extension_parts[extension_parts.length-1].indexOf(".") === -1;
-  var isPNG = extension.toLowerCase().match("\\.png$");
-  if (!isPNG) {
+  var isImage = extension.toLowerCase().match("\\.(png|jpg)$");
+  if (!isImage) {
     var file = Ti.Filesystem.getFile(platform_path + (needsJS ? ".js" : ""));
     if (file.exists()) {
       return platform_path;
@@ -147,6 +147,7 @@ exports.addSpy = function(name,spy) {
     var path_name = require('/api/TiShadow').currentApp.replace(/ /g,"_");
     require("/api/Spec").run(path_name, false);
   };
+  context.addSpy = exports.addSpy;
   context.getSpy = function(name) {
     return spys[name];
   };
