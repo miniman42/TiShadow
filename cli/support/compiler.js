@@ -44,8 +44,8 @@ function prepare(src, dst, callback) {
   manifest+= hashFile + ","+ hash +"\n";
 }
 
-function prepareFiles(index, file_list, isSpec, callback) {
-  if (index===0){
+function prepareFiles(newFile, index, file_list, isSpec, callback) {
+  if (newFile){
 	//initialise manifset contents
   	manifest = "#Created:"+config.timestamp+"\n#ForceUpdate:"+config.forceUpdate+"\n";
   	console.log("Bundle Meta - "+manifest);
@@ -54,9 +54,11 @@ function prepareFiles(index, file_list, isSpec, callback) {
 	fs.writeFile(path.join(config.tishadow_src, manifestFilename),manifest,callback());
   } else {
     var file = file_list.files[index];
-    prepare(path.join(isSpec? config.base : config.resources_path,file), path.join(config.tishadow_src, file), function(){
+    var basePath = file_list.location;
+
+    prepare(path.join(isSpec? basePath : config.resources_path,file), path.join(config.tishadow_src, file), function(){
       index++;
-      prepareFiles(index, file_list, isSpec, callback);
+      prepareFiles(false, index, file_list, isSpec, callback);
     });
   }
 }
@@ -131,14 +133,18 @@ module.exports = function(env, callback) {
      i18n_list.files.forEach(function(file, idx) {
        fs.createReadStream(path.join(config.i18n_path,file)).pipe(fs.createWriteStream(path.join(config.tishadow_src, file)));
      });
-
+   
+     spec_list.location=config.spec_path;
+     i18n_list.location=config.i18n_path;
      // Process Files
-     prepareFiles(0, file_list, false, function() {
-       prepareFiles(0, spec_list, true, function() {
+     prepareFiles(true, 0, file_list, false, function() {
+      prepareFiles(false, 0, i18n_list, true, function() {
+       prepareFiles(false, 0, spec_list, true, function() {
           file_list.files = file_list.files.concat(i18n_list.files).concat(spec_list.files).concat(manifestFilename);
           finalise(file_list,callback);
        });
      });
+    });
   });
 }
 
