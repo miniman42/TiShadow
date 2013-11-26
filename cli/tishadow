@@ -100,7 +100,7 @@ program.command('close')
   .action(api.closeApp);
 
 program.command('test')
-  .description('run the test specs within the app on the device'.grey)
+  .description('run the test specs within the app on the device (NOTE: This does not clear the cache like "tishadow spec" does'.grey)
   .option('-o, --host <host>', 'server host name / ip address')
   .option('-p, --port <port>', 'server port')
   .option('-r, --room <room>', 'server room')

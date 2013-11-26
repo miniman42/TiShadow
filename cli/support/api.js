@@ -53,7 +53,7 @@ exports.closeApp = function(env) {
 
 exports.test = function(env) {
   config.buildPaths(env, function() {
-         postToServer('snippet',{code: 'runSpec()', platform: config.platform});
+         postToServer('snippet',{code: 'runSpecNoClearCache()', platform: config.platform});
   });
 };
 

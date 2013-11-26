@@ -44,4 +44,22 @@ exports.run = function (name, junitxml) {
 };
 
 
+exports.runNoClearCache = function (name, junitxml) {
+  //For a new environment reset
+  jasmine.currentEnv_ = new jasmine.Env();
+  if (junitxml) {
+    jasmine.getEnv().addReporter(new JUnitXMLReporter());
+  } else {
+    jasmine.getEnv().addReporter(new TiShadowReporter());
+  }
+  var filter_file = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory + name + "/spec/specs"); 
+  var filter = {};
+  if (filter_file.exists()) {
+    filter_file.read().text.split("\n").forEach(function(dir) {
+      filter[dir.trim()] = 1;
+    });
+  }
+  loadSpecs(name, "", filter);
+  jasmine.getEnv().execute();
+};
 
