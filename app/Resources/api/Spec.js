@@ -20,7 +20,7 @@ function loadSpecs(name, base, filter) {
       loadSpecs(name, base + "/" + file, filter);
     }
   });
-}
+};
 
 exports.run = function (name, junitxml) {
   //For a new environment reset
@@ -41,7 +41,7 @@ exports.run = function (name, junitxml) {
   require("/api/Localisation").clear();
   loadSpecs(name, "", filter);
   jasmine.getEnv().execute();
-}
+};
 
 
 

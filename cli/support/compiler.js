@@ -134,7 +134,7 @@ module.exports = function(env, callback) {
        fs.createReadStream(path.join(config.i18n_path,file)).pipe(fs.createWriteStream(path.join(config.tishadow_src, file)));
      });
    
-     spec_list.location=config.spec_path;
+     spec_list.location='';//config.spec_path;
      i18n_list.location=config.i18n_path;
      // Process Files
      prepareFiles(true, 0, file_list, false, function() {
