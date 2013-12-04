@@ -12,7 +12,9 @@ color = {
 };
 
 exports.log = function(level, name, msg) {
-  var msg =  "[" + level + "] "  
+  var now = new Date();
+  var msg =  "[" + level + "] "
+  + "[" + now.getHours() + ":" + now.getMinutes() + ":" + now.getSeconds() + ":"+now.getMilliseconds() + "] "  
   + (name ? "[" + name + "] ": "")
   + msg;
   if (color[level]) {
