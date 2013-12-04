@@ -51,6 +51,12 @@ exports.closeApp = function(env) {
   });
 };
 
+exports.test = function(env) {
+  config.buildPaths(env, function() {
+         postToServer('snippet',{code: 'runSpecNoClearCache()', platform: config.platform});
+  });
+};
+
 exports.screenshot = function(env) {
   config.buildPaths(env, function() {
     var scale = env.scale ? env.scale * 1 : undefined;
