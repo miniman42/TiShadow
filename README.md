@@ -31,6 +31,12 @@ TiShadow can be installed via npm using the following command:
   sudo npm install -g tishadow
 ```
 
+Or if you want to use the master version directly from GitHub:
+
+```
+  sudo npm install -g git+ssh://git@github.com/dbankier/TiShadow.git
+```
+
 ### TiShadow App
 
 To create a new titanium project use the following command:
@@ -391,6 +397,31 @@ Copyright 2012 jordi domenech jordi@iamyellow.net Apache License, Version 2.0
 Now using ti.compression:
 [titanium_modules](https://github.com/appcelerator/titanium_modules)
 
+Contributors
+------------
+
+```
+ project  : TiShadow
+ repo age : 1 year, 9 months
+ active   : 167 days
+ commits  : 373
+ files    : 194
+ authors  :
+   284  David Bankier           76.1%
+    42  dbankier                11.3%
+    35  Fokke Zandbergen        9.4%
+     2  noughts                 0.5%
+     1  Luis Cruz               0.3%
+     1  Clément Blanco         0.3%
+     1  Timan Rebel             0.3%
+     1  astronaughts            0.3%
+     1  iskugor                 0.3%
+     1  jsjant                  0.3%
+     1  Pedro Palmero           0.3%
+     1  Hugh Cannon             0.3%
+     1  Ivan Skugor             0.3%
+     1  Jeff Bonnes             0.3%
+```
 
 Feedback appreciated.
 

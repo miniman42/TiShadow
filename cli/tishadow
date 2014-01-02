@@ -1,14 +1,14 @@
 #!/usr/bin/env node
-var
-    api      = require('./support/api'),
+var api      = require('./support/api'),
     compiler = require('./support/compiler'),
     colors   = require('colors'),
     config   = require('./support/config'),
+    logger = require("../server/logger.js"),
     pkginfo  = require('pkginfo'),
     program  = require('commander'),
     fs       = require('fs'),
-    watch    = require('watch')
-    ;
+    path     = require('path'),
+    gaze    = require('gaze');
 
 // check if watch enabled
 var at_index = process.argv.indexOf("@");
@@ -196,15 +196,17 @@ function execute() {
 }
 
 if (config.isWatching) {
-  function watcher(f, curr, prev) {
-    if (curr || prev) {
-      execute();
-    }
-  }
-  watch.watchTree(config.resources_path,watcher);
-  if (fs.existsSync(config.spec_path)) {
-    watch.watchTree(config.spec_path,watcher);
-  }
+  config.buildPaths({},function() {
+    var paths = [config.isAlloy ? "app" :"Resources", "i18n", "spec"].map(function(p) {
+      return path.join(p,"**/*");
+    });
+    gaze(paths, {cwd:config.base}, function(err, watcher){
+      this.on('all', function watcher(event, filepath) {
+        logger.debug(event + ": " + filepath);
+        execute();
+      });
+    });
+  });
 } 
 
 execute();
