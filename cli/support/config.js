@@ -33,7 +33,6 @@ config.buildPaths = function(env, callback) {
     config.base = base;
     config.alloy_path        = path.join(base, 'app');
     config.resources_path    = path.join(base, 'Resources');
-    config.fonts_path        = path.join(config.resources_path, 'fonts');
     config.modules_path      = path.join(base, 'modules');
     config.platform_path     = path.join(base, 'platform');
     config.spec_path         = path.join(base, 'spec');
@@ -44,6 +43,7 @@ config.buildPaths = function(env, callback) {
     config.tishadow_spec     = path.join(config.tishadow_src, 'spec');
     config.tishadow_dist     = path.join(config.tishadow_build, 'dist');
     config.alloy_map_path    = path.join(config.tishadow_build, 'alloy_map.json');
+
 
     var app_name = config.app_name = result.name[0] || "bundle";
     config.bundle_file       = path.join(config.tishadow_dist, app_name + ".zip");
@@ -71,6 +71,11 @@ config.buildPaths = function(env, callback) {
       }
       config.platform = config.platform==="iphone" ? "ios": config.platform;
     }
+
+
+    config.fonts_path        = path.join(config.resources_path + '/' + config.platform, 'fonts');
+    console.log('****Fonts path: ' + config.fonts_path);
+
     config.last_updated_file = path.join(config.tishadow_build, 'last_updated' + (config.platform ? '_' + config.platform : ''));
     config.isPatch = env.patch;
     config.isUpdate = (env.update || env.patch) 

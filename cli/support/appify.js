@@ -81,6 +81,8 @@ exports.build = function(env) {
       var new_app_js = _.template(template, {proto: "http" + (config.isTiCaster ? "s" : ""), host:config.host, port: config.port, room: config.room, app_name: config.app_name, type: config.type});
       fs.writeFileSync(path.join(dest_resources,"app.js"),new_app_js);
       //copy fonts
+      console.log('Copy fonts from ' + config.fonts_path);
+      console.log('Destination: ' + dest_fonts);
       if(fs.existsSync(config.fonts_path)) {
         wrench.copyDirSyncRecursive(config.fonts_path,dest_fonts);
       }
