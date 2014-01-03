@@ -15,5 +15,6 @@ var devMode=("{{type}}" === "dev" ? true : false);
 
 //handle the setting up of resources for new/updated apps
 //must be called in all modes
+//alert('Path name is ' + path_name);
 management.initialise(path_name);
 management.start({dev: devMode, proto: "{{proto}}",host : "{{host}}",port : "{{port}}",room : "{{room}}"});

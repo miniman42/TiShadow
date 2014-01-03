@@ -87,7 +87,10 @@ exports.build = function(env) {
       //copy splash screen and icons
       ['iphone', 'android'].forEach(function(platform) {
         if(fs.existsSync(path.join(config.resources_path,platform))) {
-          wrench.copyDirSyncRecursive(path.join(config.resources_path,platform),path.join(dest_resources,platform));
+          wrench.copyDirSyncRecursive(path.join(config.resources_path,platform),path.join(dest_resources,platform),{
+            filter: new RegExp("(\.png|images|res-.*)$","i"),
+            whitelist: true
+          });
         }
         if(fs.existsSync(path.join(config.modules_path,platform))) {
           wrench.copyDirSyncRecursive(path.join(config.modules_path,platform),path.join(dest_modules,platform),{preserve:true});
@@ -108,7 +111,9 @@ exports.build = function(env) {
                        .replace("<modules/>","<modules></modules>")
                        .replace("</modules>",required_modules.join("\n")));
       // copy the bundle
-      fs.writeFileSync(path.join(dest_resources, config.app_name.replace(/ /g,"_") + ".zip"),fs.readFileSync(config.bundle_file));
+//      fs.writeFileSync(path.join(dest_resources, config.app_name.replace(/ /g,"_") + ".zip"),fs.readFileSync(config.bundle_file));
+       fs.writeFileSync(path.join(dest_resources, config.app_name.replace(/ /g,"_") + ".zip"),fs.readFileSync(config.bundle_file));
+
     }
   });
 };
