@@ -15,7 +15,10 @@ function stack(e) {
 }
 
 function unstack(e) {
-  delete containers[e.app][e.container];
+
+  if(containers && e.app && e.container && containers[e.app] && containers[e.app][e.container]){
+    delete containers[e.app][e.container];
+  }
   return;
 }
 
