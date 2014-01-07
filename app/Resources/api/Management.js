@@ -189,7 +189,11 @@ function installAppRevisionBundle(){
 	}
 
 	//create the new app directory and unzip there
-	Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, APP_NAME).createDirectory();
+	var appdir=Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, APP_NAME);
+	appdir.createDirectory();
+	if(Titanium.Platform.osname !== 'android'){
+		appdir.remoteBackup=false;
+	}
 	Compression.unzip(Ti.Filesystem.applicationDataDirectory + "/" + APP_NAME, Ti.Filesystem.resourcesDirectory + "/" + APP_NAME + '.zip',true);
 	console.log('CARMIFY: Installed bundle');
 	
@@ -286,15 +290,20 @@ function downloadUpdate(bundleTimestamp,success,fail,url){
 			console.log('CARMIFY: Unpacking new production bundle: ' + DOWNLOAD_DIR);
 			var zip_file = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, DOWNLOAD_DIR + '.zip');
 			zip_file.write(this.responseData);
-
+			if(Titanium.Platform.osname !== 'android'){
+	 			zip_file.remoteBackup=false;
+	 		}
 			// Prepare path
 	  		var target = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, DOWNLOAD_DIR);
 			//clean up any failed previous extraction...
 			if (target.exists()){
 				target.deleteDirectory(true);
 			}
-			Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, DOWNLOAD_DIR).createDirectory();
-			
+			var updir=Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, DOWNLOAD_DIR);
+			updir.createDirectory();
+			if(Titanium.Platform.osname !== 'android'){
+	 			updir.remoteBackup=false;
+	 		}
 			// Extract
 			var dataDir=Ti.Filesystem.applicationDataDirectory + "/";
 			Compression.unzip(dataDir + DOWNLOAD_DIR, dataDir + DOWNLOAD_DIR + '.zip',true);
@@ -493,7 +502,11 @@ function copyDir(destinationPointer, folder2Copy, name) {
     if(!destination.exists()) {
         destination.createDirectory();
     }
- 
+    
+	if(Titanium.Platform.osname !== 'android'){
+		destination.remoteBackup=false;
+	}
+
     var arr = folder2Copy.getDirectoryListing();
     var i = 0;
     while(i<arr.length) { 

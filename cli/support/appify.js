@@ -10,7 +10,7 @@ _.templateSettings = {
   interpolate : /\{\{(.+?)\}\}/g
 };
 
- var required_modules = [
+var required_modules = [
         '<module platform="iphone" version="0.1">yy.tidynamicfont</module>',
         '<module platform="iphone" version="0.3">net.iamyellow.tiws</module>',
         '<module platform="android" version="0.1">net.iamyellow.tiws</module>',
