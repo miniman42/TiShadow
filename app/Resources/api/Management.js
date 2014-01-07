@@ -32,7 +32,8 @@ exports.initialise = function(name){
 	var appRevision = getAppRevision();
 	
 	//if this is a new or updated native revision
-	if (appRevision!==getInstalledRevision()){
+	var existing = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, APP_NAME);
+	if ((appRevision!==getInstalledRevision())||(existing.exists()!==true)){
 		//need to install the new revision
 		installAppRevisionBundle();		
 	}
