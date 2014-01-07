@@ -1,6 +1,6 @@
 {
   "name": "tishadow",
-  "version": "2.3.13-carma",
+  "version": "2.3.14-carma",
   "dependencies": {
     "jade": ">= 0.0.1",
     "socket.io": ">= 0.9.6",

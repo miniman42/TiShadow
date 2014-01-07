@@ -17,6 +17,10 @@ var BUNDLE_TIMESTAMP = "currentBundleTimestamp",
 var _updateQueue = [],
 	isProcessingUpdateQueue=false;
 
+// interval Ids to be cleared when updates are to be applied.
+var intervalIds = [];
+
+
 //This function makes sure that the local filesystem is setup correctly to allow successful app launches and handling of native
 //revision updates.  It must be called prior to launching the application with TIShadow or calling start on the module itself
 exports.initialise = function(name){
@@ -68,6 +72,17 @@ exports.start = function(options){
             applyUpdate();	
         }
     });
+    
+	Ti.App.addEventListener("carma:management.store.interval", function(data) {
+	    intervalIds.push(data.intervalId);
+	    console.log("CARMIFY: Storing interval for later cancellation : "+data.intervalId);
+    });
+
+	Ti.App.addEventListener("carma:management.remove.interval", function(data) {
+	    intervalIds=_.without(intervalIds,data.intervalId);
+	    console.log("CARMIFY: Removing stored interval reference : "+data.intervalId);
+    });
+
 
 	console.log('CARMIFY: Launching app...');
 	TiShadow.launchApp(path_name);
@@ -402,6 +417,17 @@ function applyPatch(standby, update){
 function applyUpdate(){
 	console.log('CARMIFY: Applying update');
     if(isUpdateReady()){
+		//kill existing timers...
+		_.each(intervalIds, function(id){
+	        try {
+	            console.log("CARMIFY: Clearing recorded interval on update " + id);
+	            clearInterval(id);
+	            id = null;
+	        } catch(e) {
+	            // ignores the erros...
+	        }
+	    });
+	    intervalIds=[];
 		//Delete the app
 		setUpdateReady(false);
 		Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,APP_NAME).deleteDirectory(true);
@@ -414,7 +440,7 @@ function applyUpdate(){
 	} else {
 		console.log('CARMIFY: WARN - no update ready to apply');
 	}
-}
+};
 
 
 //INTERPRETS FEATURE TOGGLES AND DETERMINES THE LATEST BUNDLE REVISION AVAILABLE
