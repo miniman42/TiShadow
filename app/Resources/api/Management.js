@@ -428,7 +428,6 @@ function applyUpdate(){
 	        }
 	    });
 	    intervalIds=[];
-	    alert('Applying the app update now....');
 	    Ti.App.fireEvent("carma:management.cleanup", {});
 		//Delete the app
 		setUpdateReady(false);
