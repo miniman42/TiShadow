@@ -1,5 +1,5 @@
 /*
- * This is a template used when TiShadow "appifying" a titanium project.
+ * This is a template used when "carmifying" a titanium project.
  * See the README.
  */
 

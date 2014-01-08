@@ -67,7 +67,7 @@ exports.start = function(options){
     });
 
 	//Apply events come in when the app decides its ok to process the update and reload.
-    Ti.App.addEventListener("carma:mangement.update.apply", function(){ 
+    Ti.App.addEventListener("carma:management.update.apply", function(){ 
         console.log('CARMIFY: Apply Update Requested by client');
 		if (isUpdateReady() && (!isProcessingUpdateQueue)){
             applyUpdate();	

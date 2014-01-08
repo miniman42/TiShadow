@@ -120,6 +120,7 @@ config.init = function(env) {
     config.host     = "www.ticaster.io";
     config.port     = 443;
   }
+  config.isHideShadow = env.hideshadow; 
   config.isShadowModulesIncluded = !env.excludeshadowmodules;
   config.timestamp = env.timestamp || Math.round(new Date().getTime()/1000);
   config.forceUpdate = env.forceUpdate;	
