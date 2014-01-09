@@ -73,6 +73,7 @@ program.command('deploy')
 program.command('bundle')
   .description('prepare a TiShadow bundle without deploying it'.grey)
   .option('-j, --jshint', 'analyse code with JSHint')
+  .option('-h, --hideshadow', 'Only for prod releases - renames tishadow refs and removes console logging from shell')
   .option('-t, --timestamp <timestamp>', 'set the timestamp (UTC Seconds) in the created bundle manifest')
   .option('-f, --forceUpdate', 'indicate that this update should be forcefully applied when received by a device')
   .action(compiler);
