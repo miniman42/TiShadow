@@ -1,4 +1,5 @@
 var UglifyJS = require("uglify-js"),
+    config = require("./config"),
     path = require("path");
 
 function functionCall(name, args) {
@@ -16,12 +17,21 @@ function functionCallByNode(node, args) {
 }
 
 function addAppName(node) {
-  return new UglifyJS.AST_Binary({
-    left: node,
-    operator: "+",
-    right: new UglifyJS.AST_Symbol({name:'require("/api/TiShadow").currentApp + "/"'})
-  });
+  if(config.isHideShadow){
+  	return new UglifyJS.AST_Binary({
+	    left: node,
+	    operator: "+",
+	    right: new UglifyJS.AST_Symbol({name:'require("/api/CarmaOne").currentApp + "/"'})
+	  });
+  } else {
+  	return new UglifyJS.AST_Binary({
+	    left: node,
+	    operator: "+",
+	    right: new UglifyJS.AST_Symbol({name:'require("/api/TiShadow").currentApp + "/"'})
+	  });
+  }
 }
+
 function couldBeAsset(name) {
   return typeof name === 'string' && name.toLowerCase().match("image$")  ||
     ["file", "sound", "icon", "url", "leftButton", "rightButton"].indexOf(name) !== -1;
