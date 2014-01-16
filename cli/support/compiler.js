@@ -37,6 +37,7 @@ function prepare(src, dst, callback) {
       config.isWatching || process.exit(1);
     }
   } else { // Non-JS file - just pump it
+    //TODO: here is where the intro files can be ignored. 
     var  is = fs.createReadStream(src);
     var  os = fs.createWriteStream(dst);
     hash = crypto.createHash('md5').update(fs.readFileSync(src)).digest('hex').slice(0, 32);
@@ -52,7 +53,7 @@ function prepareFiles(newFile, index, file_list, isSpec, callback) {
   	console.log("Bundle Meta - "+manifest);
   }
   if (file_list.files.length === index) {
-	fs.writeFile(path.join(config.tishadow_src, manifestFilename),manifest,callback());
+	   fs.writeFile(path.join(config.tishadow_src, manifestFilename),manifest,callback());
   } else {
     var file = file_list.files[index];
     var basePath = file_list.location;
@@ -86,6 +87,9 @@ function finalise(file_list,callback) {
 
 module.exports = function(env, callback) {
   config.buildPaths(env, function() {
+
+    fs.setConfig(config);
+
     if (env.jshint) {
       logger.info("Running JSHint");
       jshint.checkPath(config.jshint_path);
@@ -132,7 +136,7 @@ module.exports = function(env, callback) {
        i18n_list = fs.getList(config.i18n_path);
        spec_list = fs.getList(config.spec_path);
      }
-
+    
      // Build the required directory structure
      fs.mkdirs(file_list.dirs, config.tishadow_src);
      fs.mkdirs(i18n_list.dirs, config.tishadow_src);
@@ -144,6 +148,8 @@ module.exports = function(env, callback) {
        spec_list.files = spec_list.files.map(function(file) { return "spec/" + file;});
        spec_list.dirs = ["spec"].concat(spec_list.dirs.map(function(dir) {return "spec/" + dir;}));
      }
+
+
 
      // using the slower sync read/write for localisation files 
      i18n_list.files.forEach(function(file, idx) {

@@ -208,6 +208,7 @@ exports.build = function(env) {
   var dest = env.destination || ".";
   var dest_resources = path.join(dest,"Resources");
   var dest_fonts = path.join(dest_resources,"fonts");
+  var dest_intro = path.join(dest_resources, "")
   var dest_modules = path.join(dest,"modules");
   var dest_platform = path.join(dest,"platform");
   var template_file = path.join(tishadow_app,"Resources","appify.js");
@@ -239,13 +240,23 @@ exports.build = function(env) {
             filter: new RegExp("(\.png|images|res-.*)$","i"),
             whitelist: true
           });
+
         }
         if(fs.existsSync(path.join(config.modules_path,platform))) {
           wrench.copyDirSyncRecursive(path.join(config.modules_path,platform),path.join(dest_modules,platform),{preserve:true});
         }
+        
+
         if(fs.existsSync(path.join(config.platform_path,platform))) {
           wrench.copyDirSyncRecursive(path.join(config.platform_path,platform),path.join(dest_platform,platform));
         }
+        var scrollerImages = platform + "/images/intro";
+        //copy the scroller images 
+        if(fs.existsSync(path.join(config.resources_path,scrollerImages))) {
+          wrench.copyDirSyncRecursive(path.join(config.resources_path,scrollerImages),path.join(dest_resources,scrollerImages));
+
+        }
+
       });
       // copy tiapp.xml and inject modules
       var source_tiapp = fs.readFileSync(path.join(config.base,"tiapp.xml"),'utf8');

@@ -1,7 +1,18 @@
 var path = require("path"),
     fs = require("fs"),
-    osSep = process.platform === 'win32' ? '\\' : '/';
+    osSep = process.platform === 'win32' ? '\\' : '/', 
+    config = null; 
 
+/** 
+ * Allows the configuration to be passed through
+ * Currently this is used so that an 'ignore platform' can be passed through in order
+ * to disregard the Android folder (for example)
+ **/
+function setConfig(cfg){
+  config = cfg;
+};
+
+fs.setConfig = setConfig;
 
 // Get Filelist with optional "update" filter
 function getList(start, last_update, _path) {
@@ -15,7 +26,14 @@ function getList(start, last_update, _path) {
     var coll = filenames.reduce(function (acc, name) {
       var abspath = path.join(start, name);
       var file_stat = fs.statSync(abspath);
-      if (name.match(/^\./)){
+      /** 
+       * This section of code ensures that the file list for the bundles contains only what is 100% required.
+       * This means: 
+       *   - hidden files are not include  
+       *   - the 'other' platform is not included (so an iOS build does not include Android specific resources and vice versa)
+       *   - images used for the intro screen (scroller_images) are not included  
+       */ 
+      if (  name.match(/^\./) || abspath.indexOf("/"+config.ignore_platform+"/") !== -1 || abspath.indexOf(config.scroller_images) !== -1 ) {
         // IGNORING HIDDEN FILES
   		//} else if(abspath.indexOf('/api/') !== -1){  //} || abspath.indexOf('heartbeat') !== -1) {
         //IGNORE API
