@@ -99,8 +99,8 @@ module.exports = function(env, callback) {
     var file_list,i18n_list,spec_list;
     // a js map of hashes must be built whether or not it is an update.
     if (config.isAlloy) { 
-      logger.info("Compiling Alloy");
-      if (!config.platform) {
+      logger.info("No way am I compiling Alloy again. Waste of my precious time");
+      /*if (!config.platform) {
         logger.error("You need to use the --platform (android|ios) flag with an alloy project.");
         process.exit();
       }
@@ -109,7 +109,7 @@ module.exports = function(env, callback) {
       if (term.code > 0) {
         logger.error("Alloy Compile Error\n");
         process.exit();
-      }
+      }*/
       alloy.buildMap();
     }
     if( config.isUpdate) {
