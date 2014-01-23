@@ -250,12 +250,18 @@ exports.build = function(env) {
         if(fs.existsSync(path.join(config.platform_path,platform))) {
           wrench.copyDirSyncRecursive(path.join(config.platform_path,platform),path.join(dest_platform,platform));
         }
+        var heavyImages = platform + "/images/"
         var scrollerImages = platform + "/images/intro";
         //copy the scroller images 
         if(fs.existsSync(path.join(config.resources_path,scrollerImages))) {
           wrench.copyDirSyncRecursive(path.join(config.resources_path,scrollerImages),path.join(dest_resources,scrollerImages));
-
         }
+    
+        //TODO: copy over the heavier images
+       /*if(fs.existsSync(path.join(config.resources_path,heavyImages))) {
+          wrench.copyDirSyncRecursive(path.join(config.resources_path,heavyImages),path.join(dest_resources,heavyImages));
+        }*/
+
 
       });
       // copy tiapp.xml and inject modules

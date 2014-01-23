@@ -44,6 +44,7 @@ config.buildPaths = function(env, callback) {
     config.tishadow_dist     = path.join(config.tishadow_build, 'dist');
     config.alloy_map_path    = path.join(config.tishadow_build, 'alloy_map.json');
 
+
     var app_name = config.app_name = result.name[0] || "bundle";
     config.bundle_file       = path.join(config.tishadow_dist, app_name + ".zip");
     config.jshint_path       = fs.existsSync(config.alloy_path) ? config.alloy_path : config.resources_path;
@@ -74,14 +75,19 @@ config.buildPaths = function(env, callback) {
     /** 
      * Set which platform to ignore so that extra bundle information is not created
      */
+    var heavyImages = null;
     if((config.platform === "iphone") || (config.platform === "ios")){
       config.ignore_path = path.join(config.resources_path + '/android');
       config.ignore_platform = "android";
+      heavyImages = "iphone/images/";
     }
     else{
       config.ignore_path = path.join(config.resources_path + '/iphone');
       config.ignore_platform = "iphone";
-    }
+      //heavyImages = "android/images/";
+      config.heavy_images = "sfo.png";
+    }  
+  // config.heavy_images =  path.join(config.resources_path, config.heavy_images);
    //record the path for the scroller images (to exclude from the bundle)
    config.scroller_images = '/images/intro/';
    //record the location of the fonts for this build. They are copied seperately since the Titanium 3.2 update
@@ -89,6 +95,7 @@ config.buildPaths = function(env, callback) {
    console.log('****Fonts are: ' + config.fonts_path);
    console.log('****Ignore resources that are included in ' + config.ignore_path);
    console.log('****Ignore platform: ' + config.ignore_platform);
+   console.log('****Heavy Images ' + config.heavy_images);
 
 
     config.last_updated_file = path.join(config.tishadow_build, 'last_updated' + (config.platform ? '_' + config.platform : ''));

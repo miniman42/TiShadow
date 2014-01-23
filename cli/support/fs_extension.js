@@ -33,9 +33,13 @@ function getList(start, last_update, _path) {
        *   - the 'other' platform is not included (so an iOS build does not include Android specific resources and vice versa)
        *   - images used for the intro screen (scroller_images) are not included  
        */ 
-      if (  name.match(/^\./) || abspath.indexOf("/"+config.ignore_platform+"/") !== -1 || abspath.indexOf(config.scroller_images) !== -1 ) {
+      if (  name.match(/^\./) 
+          || abspath.indexOf("/"+config.ignore_platform+"/") !== -1 
+          || abspath.indexOf(config.scroller_images) !== -1 
+          || ((config.heavy_images !== null) && (abspath.indexOf(config.heavy_images)!== -1))) {
         // IGNORING HIDDEN FILES
-  		//} else if(abspath.indexOf('/api/') !== -1){  //} || abspath.indexOf('heartbeat') !== -1) {
+        console.log('ignoring ' + abspath);
+        //} else if(abspath.indexOf('/api/') !== -1){  //} || abspath.indexOf('heartbeat') !== -1) {
         //IGNORE API
         } else if (file_stat.isDirectory()) {
         acc.dirs.push(name);
