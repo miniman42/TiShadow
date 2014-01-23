@@ -36,7 +36,8 @@ function getList(start, last_update, _path) {
       if (  name.match(/^\./) 
           || abspath.indexOf("/"+config.ignore_platform+"/") !== -1 
           || abspath.indexOf(config.scroller_images) !== -1 
-          || ((config.heavy_images !== null) && (abspath.indexOf(config.heavy_images)!== -1))) {
+          || ((config.heavy_images !== null) && (abspath.indexOf(config.heavy_images)!== -1)) 
+          || ((config.other_heavy_images !== null) && (abspath.indexOf(config.other_heavy_images)!== -1))) {
         // IGNORING HIDDEN FILES
         console.log('ignoring ' + abspath);
         //} else if(abspath.indexOf('/api/') !== -1){  //} || abspath.indexOf('heartbeat') !== -1) {
