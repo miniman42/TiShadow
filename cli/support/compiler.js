@@ -48,12 +48,12 @@ function prepare(src, dst, callback) {
 
 function prepareFiles(newFile, index, file_list, isSpec, callback) {
   if (newFile){
-	//initialise manifset contents
-  	manifest = "#Created:"+config.timestamp+"\n#ForceUpdate:"+config.forceUpdate+"\n";
-  	console.log("Bundle Meta - "+manifest);
+  //initialise manifset contents
+    manifest = "#Created:"+config.timestamp+"\n#ForceUpdate:"+config.forceUpdate+"\n";
+    console.log("Bundle Meta - "+manifest);
   }
   if (file_list.files.length === index) {
-	   fs.writeFile(path.join(config.tishadow_src, manifestFilename),manifest,callback());
+     fs.writeFile(path.join(config.tishadow_src, manifestFilename),manifest,callback());
   } else {
     var file = file_list.files[index];
     var basePath = file_list.location;

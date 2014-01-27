@@ -85,8 +85,7 @@ config.buildPaths = function(env, callback) {
       config.ignore_path = path.join(config.resources_path + '/iphone');
       config.ignore_platform = "iphone";
       //heavyImages = "android/images/";
-      config.heavy_images = "sfo.png";
-      config.other_heavy_images = "sfo.9.png";
+      //config.heavy_images = "sfo.png";
     }  
   // config.heavy_images =  path.join(config.resources_path, config.heavy_images);
    //record the path for the scroller images (to exclude from the bundle)
@@ -146,7 +145,7 @@ config.init = function(env) {
   config.isHideShadow = env.hideshadow; 
   config.isShadowModulesIncluded = !env.excludeshadowmodules;
   config.timestamp = env.timestamp || Math.round(new Date().getTime()/1000);
-  config.forceUpdate = env.forceUpdate;	
+  config.forceUpdate = env.forceUpdate; 
   config.screenshot_path = env.screenshotPath || "/tmp";
   config.internalIP = env.internalIp;
   config.isLongPolling = env.longPolling;

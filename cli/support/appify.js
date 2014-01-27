@@ -4,8 +4,8 @@ var logger = require("../../server/logger.js"),
     path = require("path"),
     tishadow_app = path.join(__dirname, "../..","app"),
     config = require("./config"),
-	UglifyJS = require("uglify-js"),
-   	_ = require("underscore");
+  UglifyJS = require("uglify-js"),
+    _ = require("underscore");
 
 _.templateSettings = {
   interpolate : /\{\{(.+?)\}\}/g
@@ -121,11 +121,11 @@ var copyAndProcessDirSyncRecursive = function(sourceDir, newDirLocation, opts) {
         var fCopyFile = function(srcFile, destFile,opts) {
             if(typeof opts !== 'undefined' && opts.preserveFiles && fs.existsSync(destFile)) return;
             var contents = fs.readFileSync(srcFile);
-			if(srcFile.match("js$") && typeof opts !== 'undefined' && opts.jsProcessor){
-				contents=opts.jsProcessor(contents.toString());				
-			}
+      if(srcFile.match("js$") && typeof opts !== 'undefined' && opts.jsProcessor){
+        contents=opts.jsProcessor(contents.toString());       
+      }
             if(config.isHideShadow){
-            	destFile=destFile.replace(/TiShadow/,"CarmaOne");
+              destFile=destFile.replace(/TiShadow/,"CarmaOne");
             }
             fs.writeFileSync(destFile, contents);
             var stat =  fs.lstatSync(srcFile);
@@ -158,14 +158,14 @@ var copyAndProcessDirSyncRecursive = function(sourceDir, newDirLocation, opts) {
 }; 
 
 var jsProcessor=function(contents){
-  	if (config.isHideShadow){
-		contents=contents.replace(/console\.log\(/g, '//console.log(');
-      	contents=contents.replace(/TiShadow/g,"CarmaOne");
-      	contents=contents.replace(/tishadow/g,"carmaone");
+    if (config.isHideShadow){
+    contents=contents.replace(/console\.log\(/g, '//console.log(');
+        contents=contents.replace(/TiShadow/g,"CarmaOne");
+        contents=contents.replace(/tishadow/g,"carmaone");
     }
-	//this will strip comments
-	var ast = UglifyJS.parse(contents);
-	return ast.print_to_string({beautify: true});
+  //this will strip comments
+  var ast = UglifyJS.parse(contents);
+  return ast.print_to_string({beautify: true});
 };
 
 exports.copyCoreProject = function(env) {
@@ -189,8 +189,8 @@ exports.copyCoreProject = function(env) {
   } else {
     copyAndProcessDirSyncRecursive(tishadow_app, dest,{forceDelete: true, jsProcessor: jsProcessor});
     if (!config.isShadowModulesIncluded){
-    	wrench.rmdirSyncRecursive(path.join(dest,'modules/android'));
-    	wrench.rmdirSyncRecursive(path.join(dest,'modules/iphone'));
+      wrench.rmdirSyncRecursive(path.join(dest,'modules/android'));
+      wrench.rmdirSyncRecursive(path.join(dest,'modules/iphone'));
     }
     //inject new GUID
     var source_tiapp = fs.readFileSync(path.join(tishadow_app,"tiapp.xml"),'utf8');
@@ -237,7 +237,10 @@ exports.build = function(env) {
       ['iphone', 'android'].forEach(function(platform) {
         if(fs.existsSync(path.join(config.resources_path,platform))) {
           wrench.copyDirSyncRecursive(path.join(config.resources_path,platform),path.join(dest_resources,platform),{
-            filter: new RegExp("(\.png|images|res-.*)$","i"),
+
+            //TODO: try listing the res folders recursively
+            //TODO: simple android app that loads an image file
+            filter: new RegExp("(\.png|images|high|medium|low|intro|res-.*)$","i"),
             whitelist: true
           });
 
@@ -267,7 +270,7 @@ exports.build = function(env) {
       // copy tiapp.xml and inject modules
       var source_tiapp = fs.readFileSync(path.join(config.base,"tiapp.xml"),'utf8');
       if (!config.isShadowModulesIncluded){
-      	required_modules=[]; //if excluding shadow modules then make sure not to include them in the output tiapp.xml
+        required_modules=[]; //if excluding shadow modules then make sure not to include them in the output tiapp.xml
       } 
       required_modules.push("</modules>");
       fs.writeFileSync(path.join(dest,"tiapp.xml"), 

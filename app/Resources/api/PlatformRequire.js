@@ -68,6 +68,14 @@ exports.file = function(extension) {
   if (typeof extension !== "string") {
     return extension;
   }
+
+  //JS: Send sfo.png right back, it's always bundled in the app
+  if(extension.indexOf('sfo.png') !== -1){
+      console.log('Sending back sfo? ' + extension);
+      return extension;
+  }
+
+
   extension = extension.replace(/^\//, '');
   var base = Ti.Filesystem.applicationDataDirectory + "/" + require("/api/TiShadow").currentApp + "/";
   var path = base + extension,
@@ -79,6 +87,7 @@ exports.file = function(extension) {
       return platform_path;
     }
   } else { 
+
     var platform_dense = densityFile.find(platform_path);
     if (null !== platform_dense) {
       return platform_dense;
