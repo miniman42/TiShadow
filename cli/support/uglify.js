@@ -46,7 +46,7 @@ function couldBeAsset(name, value) {
     ios = true;
   }
   if (!ios) {
-    if (current_file.indexOf('/builder.js') !== -1) {
+    if (current_file.indexOf('/builder_android.js') !== -1) {
       return false;
     }
   }
