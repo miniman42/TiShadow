@@ -8,7 +8,7 @@ function checkBundleParam($bundle) {
   return (strlen($bundle)===10)&&is_numeric($bundle);
 }
 
-define('BUNDLE_NAME','carma-splinter.zip');
+define('BUNDLE_NAME','Carma.zip');
 
 $os= $_GET["os"];
 $src= $_GET["src"];
