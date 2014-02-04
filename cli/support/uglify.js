@@ -181,7 +181,7 @@ var convert = new UglifyJS.TreeTransformer(null, function(node) {
     } else if (couldBeAsset(node.key)) {
       node.value.value = toFullPath(node.value.value);
       // console.log( current_file + '(node.value) assign: ' +node.value.value);
-      if (node.value.value && node.value.value.indexOf('/sfo.png') !== -1) {
+      if (node.value.value && (node.value.value.indexOf('/sfo.png') !== -1) && (&& node.value.value.indexOf('/background.png') !== -1)) {
         //  console.log('(skipping assign) assign: ' +node.value.value);
       } else {
         node.value = functionCall("__p.file", [node.value]);
