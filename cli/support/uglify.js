@@ -53,7 +53,7 @@ function couldBeAsset(name, value) {
 
   if (!ios) {
     if (value && typeof value === 'string') {
-      if ((value.indexOf('sfo.png') !== -1) || (value.indexOf('sfo.9.png') !== -1)) {
+      if ((value.indexOf('sfo.png') !== -1) || (value.indexOf('sfo.9.png') !== -1) || (value.indexOf('background.png') !== -1)) {
         return false;
       }
     }
