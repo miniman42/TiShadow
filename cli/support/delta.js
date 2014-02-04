@@ -1,6 +1,7 @@
 var logger = require("../../server/logger.js"),
-	mfhndlr = require("../../app/Resources/api/ManifestHandler.js"),
+    mfhndlr = require("../../app/Resources/api/ManifestHandler.js"),
     fs = require("fs"),
+    wrench = require("wrench"),
     path = require("path"),
     archiver = require('archiver'),
     zip = require('adm-zip'),
@@ -50,7 +51,7 @@ exports.delta = function(env,callback) {
 					//if dir doesn't exist create it
 					if(!fs.existsSync(path.dirname(delfilepath))) {
 						console.log("--> Creating delta output dir: " +path.dirname(file));
-						fs.mkdirSyncP(path.dirname(delfilepath),true);
+						wrench.mkdirSyncRecursive(path.dirname(delfilepath));
 					}
 					//Copy file to delta bundle
 					console.log("--> Copying file to delta output dir: " + JSON.stringify(file));

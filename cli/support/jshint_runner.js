@@ -13,7 +13,7 @@ exports.checkContent = function(filename, filecontent) {
 };
 
 exports.checkPath = function(target_path) {
-  fs.getList(target_path).files.forEach(function(file) {
+  fs.getList({path: target_path}).files.forEach(function(file) {
     if (file.match("js$") || file.match("json$")) {
       exports.checkContent(file, fs.readFileSync(path.join(target_path, file)).toString());
     }

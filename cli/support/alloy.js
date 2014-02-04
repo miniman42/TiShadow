@@ -23,7 +23,7 @@ exports.mapFiles = function(last_stat) {
 
 exports.buildMap = function() {
   // regular filtered by last_stat won't do it alone 
-  file_list = fs.getList(config.resources_path);
+  file_list = fs.getList({path: config.resources_path});
 
   // create a map of hashes for js files
   current_map = _.object(file_list.files,file_list.files.map(function(file) {

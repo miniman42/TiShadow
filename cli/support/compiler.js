@@ -88,8 +88,6 @@ function finalise(file_list,callback) {
 module.exports = function(env, callback) {
   config.buildPaths(env, function() {
 
-    fs.setConfig(config);
-
     if (env.jshint) {
       logger.info("Running JSHint");
       jshint.checkPath(config.jshint_path);
@@ -100,23 +98,14 @@ module.exports = function(env, callback) {
     // a js map of hashes must be built whether or not it is an update.
     if (config.isAlloy) { 
       logger.info("No way am I compiling Alloy again. Waste of my precious time");
-      /*if (!config.platform) {
-        logger.error("You need to use the --platform (android|ios) flag with an alloy project.");
-        process.exit();
-      }
-      var term = exec("alloy compile -b -l 1 --config platform="+config.platform);
-      process.stdout.write(term.stdout);
-      if (term.code > 0) {
-        logger.error("Alloy Compile Error\n");
-        process.exit();
-      }*/
       alloy.buildMap();
     }
+
     if( config.isUpdate) {
        var last_stat = fs.statSync(config.last_updated_file);
-       file_list = config.isAlloy ? alloy.mapFiles(last_stat) : fs.getList(config.resources_path,last_stat.mtime);
-       i18n_list = fs.getList(config.i18n_path,last_stat.mtime);
-       spec_list = fs.getList(config.spec_path,last_stat.mtime);
+       file_list = config.isAlloy ? alloy.mapFiles(last_stat) : fs.getList({path: config.resources_path, update_time: last_stat.mtime, blacklist: config.blacklistFilter});
+       i18n_list = fs.getList({path: config.i18n_path, update_time: last_stat.mtime});
+       spec_list = fs.getList({path: config.spec_path, update_time: last_stat.mtime, blacklist: config.blacklistFilter});
 
        if (file_list.files.length === 0 && i18n_list.files.length === 0 && spec_list.files.length === 0) {
          logger.error("Nothing to update.");
@@ -132,9 +121,9 @@ module.exports = function(env, callback) {
        }
        // Create the tishadow build paths
        fs.mkdirs([config.tishadow_build, config.tishadow_src, config.tishadow_dist]);
-       file_list = fs.getList(config.resources_path);
-       i18n_list = fs.getList(config.i18n_path);
-       spec_list = fs.getList(config.spec_path);
+       file_list = fs.getList({path: config.resources_path, blacklist: config.blacklistFilter});
+       i18n_list = fs.getList({path: config.i18n_path});
+       spec_list = fs.getList({path: config.spec_path, blacklist: config.blacklistFilter});
      }
     
      // Build the required directory structure

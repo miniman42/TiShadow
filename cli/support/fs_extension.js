@@ -1,61 +1,36 @@
 var path = require("path"),
-    fs = require("fs"),
-    osSep = process.platform === 'win32' ? '\\' : '/', 
-    config = null; 
-
-/** 
- * Allows the configuration to be passed through
- * Currently this is used so that an 'ignore platform' can be passed through in order
- * to disregard the Android folder (for example)
- **/
-function setConfig(cfg){
-  config = cfg;
-};
-
-fs.setConfig = setConfig;
+    fs = require("fs");
 
 // Get Filelist with optional "update" filter
-function getList(start, last_update, _path) {
+function getList(o) { 
   var files = [], dirs=[];
-  if (!fs.existsSync(start)) {
+  if (!fs.existsSync(o.path)) {
     return {files: files, dirs: dirs};
   }
-  var stat = fs.statSync(start);
+  var stat = fs.statSync(o.path);
   if (stat.isDirectory()) {
-    var filenames = fs.readdirSync(start);
+    var filenames = fs.readdirSync(o.path);
     var coll = filenames.reduce(function (acc, name) {
-      var abspath = path.join(start, name);
+      var abspath = path.join(o.path, name);
       var file_stat = fs.statSync(abspath);
-      /** 
-       * This section of code ensures that the file list for the bundles contains only what is 100% required.
-       * This means: 
-       *   - hidden files are not include  
-       *   - the 'other' platform is not included (so an iOS build does not include Android specific resources and vice versa)
-       *   - images used for the intro screen (scroller_images) are not included  
-       */ 
-      if (  name.match(/^\./) 
-          || abspath.indexOf("/"+config.ignore_platform+"/") !== -1 
-          || abspath.indexOf(config.scroller_images) !== -1 
-          || ((config.heavy_images !== null) && (abspath.indexOf(config.heavy_images)!== -1))) {
+      if (name.match(/^\./) || (o.blacklist && o.blacklist(abspath))) {
+        console.log("Ignoring: " + name);
         // IGNORING HIDDEN FILES
-        console.log('ignoring ' + abspath);
-        //} else if(abspath.indexOf('/api/') !== -1){  //} || abspath.indexOf('heartbeat') !== -1) {
-        //IGNORE API
-        } else if (file_stat.isDirectory()) {
+      } else if (file_stat.isDirectory()) {
         acc.dirs.push(name);
       } else {
-        if (last_update === undefined || last_update < file_stat.mtime) {
-          acc.names.push(path.join(_path || "." , name));
+        if (o.last_update === undefined || o.last_update < file_stat.mtime) {
+          acc.names.push(path.join(o.rel_path || "." , name));
         }
       }
       return acc;
     }, {"names": [], "dirs": []});
     files = coll.names;
     coll.dirs.forEach(function (d) {
-      var abspath = path.join(start, d);
-      var relpath = path.join(_path|| ".", d);
+      var abspath = path.join(o.path, d);
+      var relpath = path.join(o.rel_path|| ".", d);
       dirs.push(relpath);
-      var recurs = getList(abspath, last_update, relpath);
+      var recurs = getList({path: abspath, last_update: o.last_update, rel_path: relpath, blacklist: o.blacklist});
       files = files.concat(recurs.files);
       dirs = dirs.concat(recurs.dirs);
     });
@@ -100,40 +75,3 @@ fs.touch = function(file) {
     fs.writeFileSync(file,"");
   }
 };
-
-function mkdirSyncP(path, position) {
-  var parts = require('path').normalize(path).split(osSep);
-  position = position || 0;
-  
-  if (position >= parts.length) {
-    return true;
-  }
-  
-  var directory = parts.slice(0, position + 1).join(osSep) || osSep;
-  try {
-    fs.statSync(directory);
-    mkdirSyncP(path, position + 1);
-  } catch (e) {
-    try {
-      fs.mkdirSync(directory);
-      mkdirSyncP(path, position + 1);
-    } catch (e) {
-      if (e.code != 'EEXIST') {
-        throw e;
-      }
-      mkdirSyncP(path, position + 1);
-    }
-  }
-};
-
-fs.mkdirSyncP = mkdirSyncP;
-
-
-
-
-
-
-
-
-
-

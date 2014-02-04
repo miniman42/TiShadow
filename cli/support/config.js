@@ -97,6 +97,14 @@ config.buildPaths = function(env, callback) {
    console.log('****Ignore platform: ' + config.ignore_platform);
    console.log('****Heavy Images ' + config.heavy_images);
 
+    // file black list filter function
+    config.blacklistFilter = function blacklistFilter(abspath) {
+      return abspath.indexOf("/"+config.ignore_platform+"/") !== -1 
+          || abspath.indexOf(config.scroller_images) !== -1 
+          || ((config.heavy_images !== null) && (abspath.indexOf(config.heavy_images)!== -1));
+    }
+
+
 
     config.last_updated_file = path.join(config.tishadow_build, 'last_updated' + (config.platform ? '_' + config.platform : ''));
     config.isPatch = env.patch;
