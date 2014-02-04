@@ -46,12 +46,7 @@ function prepare(src, dst, callback) {
   manifest+= hashFile + ","+ hash +"\n";
 }
 
-function prepareFiles(newFile, index, file_list, isSpec, callback) {
-  if (newFile){
-  //initialise manifset contents
-    manifest = "#Created:"+config.timestamp+"\n#ForceUpdate:"+config.forceUpdate+"\n";
-    console.log("Bundle Meta - "+manifest);
-  }
+function prepareFiles(index, file_list, isSpec, callback) {
   if (file_list.files.length === index) {
      fs.writeFile(path.join(config.tishadow_src, manifestFilename),manifest,callback());
   } else {
@@ -60,7 +55,7 @@ function prepareFiles(newFile, index, file_list, isSpec, callback) {
 
     prepare(path.join(isSpec? basePath : config.resources_path,file), path.join(config.tishadow_src, file), function(){
       index++;
-      prepareFiles(false, index, file_list, isSpec, callback);
+      prepareFiles(index, file_list, isSpec, callback);
     });
   }
 }
@@ -147,10 +142,15 @@ module.exports = function(env, callback) {
    
      spec_list.location='';//config.spec_path;
      i18n_list.location=config.i18n_path;
+    
+     // Initialise Manifest 
+     manifest = "#Created:"+config.timestamp+"\n#ForceUpdate:"+config.forceUpdate+"\n";
+     console.log("Bundle Meta - "+manifest);
+
      // Process Files
-     prepareFiles(true, 0, file_list, false, function() {
-      prepareFiles(false, 0, i18n_list, true, function() {
-       prepareFiles(false, 0, spec_list, true, function() {
+     prepareFiles(0, file_list, false, function() {
+      prepareFiles(0, i18n_list, true, function() {
+       prepareFiles(0, spec_list, true, function() {
           file_list.files = file_list.files.concat(i18n_list.files).concat(spec_list.files).concat(manifestFilename);
           finalise(file_list,callback);
        });
