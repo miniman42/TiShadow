@@ -99,9 +99,21 @@ config.buildPaths = function(env, callback) {
 
     // file black list filter function
     config.blacklistFilter = function blacklistFilter(abspath) {
-      return abspath.indexOf("/"+config.ignore_platform+"/") !== -1 
-          || abspath.indexOf(config.scroller_images) !== -1 
-          || ((config.heavy_images !== null) && (abspath.indexOf(config.heavy_images)!== -1));
+      if(config.platform === "iphone" || config.platform === "ios"){
+        return abspath.indexOf("/"+config.ignore_platform+"/") !== -1 
+            || abspath.indexOf(config.scroller_images) !== -1 
+            || ((config.heavy_images !== null) && (abspath.indexOf(config.heavy_images)!== -1));  
+      }
+      else{
+        //you're so special Android! 
+          return abspath.indexOf("/"+config.ignore_platform+"/") !== -1 
+            || abspath.indexOf("/images/high/intro") !== -1 
+            || abspath.indexOf("/images/low/intro") !== -1 
+            || abspath.indexOf("/images/medium/intro") !== -1 
+            || abspath.indexOf(config.scroller_images) !== -1 
+            || ((config.heavy_images !== null) && (abspath.indexOf(config.heavy_images)!== -1));  
+      }
+      
     }
 
 

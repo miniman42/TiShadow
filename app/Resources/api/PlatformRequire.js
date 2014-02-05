@@ -68,11 +68,16 @@ exports.file = function(extension) {
   if (typeof extension !== "string") {
     return extension;
   }
+  //because paramaterized versions of the background image will not be preprocessed.
+  if(extension.indexOf("sfo.png") !== -1){
+     return extension;
+  }
   extension = extension.replace(/^\//, '');
   var base = Ti.Filesystem.applicationDataDirectory + "/" + require("/api/TiShadow").currentApp + "/";
   var path = base + extension,
   platform_path =  base + (os === "android" ? "android" : "iphone") + "/" + extension;
   var isImage = extension.toLowerCase().match("\\.(png|jpg)$");
+
   if (!isImage) {
     var file = Ti.Filesystem.getFile(platform_path);
     if (file.exists()) {
