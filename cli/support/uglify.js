@@ -41,24 +41,16 @@ function addAppName(node) {
 function couldBeAsset(name, value) {
 
   //avoid setting this for the scroller but only in the case of Android 
-  var ios = false;
-  if (config.platform === "ios") {
-    ios = true;
-  }
-  if (!ios) {
+  if (config.platform !== "ios") {
     if (current_file.indexOf('/builder_android.js') !== -1) {
       return false;
     }
-  }
-
-  if (!ios) {
     if (value && typeof value === 'string') {
       if ((value.indexOf('sfo.png') !== -1) || (value.indexOf('sfo.9.png') !== -1)) {
         return false;
       }
     }
   }
-
 
   return typeof name === 'string' && name.toLowerCase().match("image$") ||
     ["file", "sound", "icon", "url", "leftButton", "rightButton"].indexOf(name) !== -1;
