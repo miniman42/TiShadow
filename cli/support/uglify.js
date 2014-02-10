@@ -49,15 +49,15 @@ function couldBeAsset(name, value) {
     if (current_file.indexOf('/builder_android.js') !== -1) {
       return false;
     }
-  }
-
-  if (!ios) {
+  } 
+  //JS - not sure about this bit... does it still work on iOS then???
+ // if (!ios) {
     if (value && typeof value === 'string') {
-      if ((value.indexOf('sfo.png') !== -1) || (value.indexOf('sfo.9.png') !== -1) || (value.indexOf('background.png') !== -1)) {
+      if ((value.indexOf('sfo.png') !== -1) || (value.indexOf('sfo.9.png') !== -1) || (value.indexOf('background.png') !== -1) || (value.indexOf('background.jpg') !== -1) ) {
         return false;
       }
     }
-  }
+  //}
 
 
   return typeof name === 'string' && name.toLowerCase().match("image$") ||
@@ -181,7 +181,7 @@ var convert = new UglifyJS.TreeTransformer(null, function(node) {
     } else if (couldBeAsset(node.key)) {
       node.value.value = toFullPath(node.value.value);
       // console.log( current_file + '(node.value) assign: ' +node.value.value);
-     if (node.value.value && (node.value.value.indexOf('/sfo.png') !== -1) && (node.value.value.indexOf('/background.png') !== -1)) {
+     if (node.value.value && (node.value.value.indexOf('/sfo.png') !== -1) && (node.value.value.indexOf('/background.png') !== -1) && (node.value.value.indexOf('/background.jpg') !== -1)) {
           //  console.log('(skipping assign) assign: ' +node.value.value);
       } else {
         node.value = functionCall("__p.file", [node.value]);

@@ -69,7 +69,7 @@ exports.file = function(extension) {
     return extension;
   }
   //because paramaterized versions of the background image will not be preprocessed.
-  if(extension.indexOf("sfo.png") !== -1){
+  if( (extension.indexOf("sfo.png") !== -1) || (extension.indexOf("background.png") !== -1) || (extension.indexOf("background.jpg") !== -1)){
      return extension;
   }
   extension = extension.replace(/^\//, '');
