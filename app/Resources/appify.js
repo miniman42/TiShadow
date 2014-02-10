@@ -8,26 +8,8 @@ Titanium.App.idleTimerDisabled = true;
 var management = require('/api/Management'),
 	utils = require('/api/Utils');
 
-
-/** 
-
-		Ti.App.addEventListener("carma:shell.push.token", function(data) {
-
-			alert('Got token:' + data.token);
-			if (data.state === "success") {
-				tokenSuccess(data.token);
-			}
-			if (data.state === "error") {
-				tokenError(data.error);
-			}
-			if (data.state === "callback"){
-				tokenCallback(data.callback);
-			}
-
-
-		});
-
-	**/
+//indicates that the app is running in tishadow mode
+var shadowMode = true;
 
 var registerForPushNotification = function(){
 

@@ -254,7 +254,7 @@ exports.build = function(env) {
       ['iphone', 'android'].forEach(function(platform) {
         if (fs.existsSync(path.join(config.resources_path, platform))) {
           wrench.copyDirSyncRecursive(path.join(config.resources_path, platform), path.join(dest_resources, platform), {
-            filter: new RegExp("(\.png|images|high|medium|low|intro|res-.*|background.png)$", "i"),
+            filter: new RegExp("(\.png|images|high|medium|low|intro|res-.*|background.png|background.jpg)$", "i"),
             whitelist: true
           });
 

@@ -15,10 +15,58 @@ var BUNDLE_TIMESTAMP = "currentBundleTimestamp",
 
 //need to make sure app update events do not overlap as its possible to trigger these multiple times.   
 var _updateQueue = [],
-	isProcessingUpdateQueue=false;
-
+	isProcessingUpdateQueue=false, 
+	updateWindow = null, 
+	activityIndicator = null, 
+	activityCallback = null;
 // interval Ids to be cleared when updates are to be applied.
 var intervalIds = [];
+
+
+/*
+var createUpdateWindow = function(){
+	updateWindow = Ti.UI.createWindow({
+	  backgroundColor: 'black', 
+	  opacity: 0.5,
+	});
+
+	var style;
+	if (Ti.Platform.name === 'iPhone OS'){
+	  style = Titanium.UI.iPhone.ActivityIndicatorStyle.BIG;
+	}
+	else {
+	  style = Ti.UI.ActivityIndicatorStyle.BIG;
+	}
+
+	activityIndicator = Ti.UI.createActivityIndicator({
+	  color: 'white',
+	  font: {fontSize:16},
+	  message: 'Loading...',
+	  style:style,
+	  top: 100,
+	  left:10,
+	  height:Ti.UI.SIZE,
+	  width:Ti.UI.SIZE
+	});
+
+	updateWindow.add(activityIndicator);
+	activityCallback = function(e){
+		activityIndicator.show();
+	};
+
+	updateWindow.addEventListener('open', activityCallback);
+
+	updateWindow.open();
+
+};
+
+
+var closeUpdateWindow = function(){
+	updateWindow.removeEventListener('open', activityCallback);
+    activityIndicator.hide();
+	updateWindow.close();
+};
+*/
 
 
 //This function makes sure that the local filesystem is setup correctly to allow successful app launches and handling of native
@@ -68,9 +116,13 @@ exports.start = function(options){
 
 	//Apply events come in when the app decides its ok to process the update and reload.
     Ti.App.addEventListener("carma:management.update.apply", function(){ 
-        console.log('CARMIFY: Apply Update Requested by client');
+        
 		if (isUpdateReady() && (!isProcessingUpdateQueue)){
-            applyUpdate();	
+			//console.log('Applying...');
+			
+//			createUpdateWindow();
+
+			applyUpdate();	
         }
     });
     
@@ -80,6 +132,8 @@ exports.start = function(options){
     });
 
 	Ti.App.addEventListener("carma:management.remove.interval", function(data) {
+		//clearing the interval.
+		clearInterval(data.intervalId);
 	    intervalIds=_.without(intervalIds,data.intervalId);
 	    console.log("CARMIFY: Removing stored interval reference : "+data.intervalId);
     });
@@ -247,7 +301,7 @@ function processUpdate(update,callback){
 	if (update.type === "carma:feature.toggles"){
 		console.log("CARMIFY: Update triggered by feature toggles");
 		latestBundleVersion=getLatestUpdateBundleVersion(update.data);
-	 	if(localBundleVersion < latestBundleVersion) {
+		if(localBundleVersion < latestBundleVersion) {
 			//Update required
 			if (isUpdateReady() && (getUpdateVersion()===latestBundleVersion)){
 				//don't download the same bundle twice!
@@ -446,6 +500,7 @@ function applyUpdate(){
 		//update bundle version
 		setBundleVersion(getUpdateVersion());
 		console.log('CARMIFY: Relaunching app... bundle:'+getBundleVersion());
+		//closeUpdateWindow();
 		TiShadow.launchApp(APP_NAME);
 		notifyUpdated();
 	} else {
