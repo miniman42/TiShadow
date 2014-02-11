@@ -23,7 +23,6 @@ var _updateQueue = [],
 var intervalIds = [];
 
 
-/*
 var createUpdateWindow = function(){
 	updateWindow = Ti.UI.createWindow({
 	  backgroundColor: 'black', 
@@ -43,10 +42,10 @@ var createUpdateWindow = function(){
 	  font: {fontSize:16},
 	  message: 'Loading...',
 	  style:style,
-	  top: 100,
-	  left:10,
 	  height:Ti.UI.SIZE,
-	  width:Ti.UI.SIZE
+	  width:Ti.UI.SIZE, 
+	  navBarHidden: true, 
+	  modal : false
 	});
 
 	updateWindow.add(activityIndicator);
@@ -66,7 +65,8 @@ var closeUpdateWindow = function(){
     activityIndicator.hide();
 	updateWindow.close();
 };
-*/
+
+
 
 
 //This function makes sure that the local filesystem is setup correctly to allow successful app launches and handling of native
@@ -118,10 +118,7 @@ exports.start = function(options){
     Ti.App.addEventListener("carma:management.update.apply", function(){ 
         
 		if (isUpdateReady() && (!isProcessingUpdateQueue)){
-			//console.log('Applying...');
-			
-//			createUpdateWindow();
-
+			createUpdateWindow();
 			applyUpdate();	
         }
     });
@@ -500,8 +497,8 @@ function applyUpdate(){
 		//update bundle version
 		setBundleVersion(getUpdateVersion());
 		console.log('CARMIFY: Relaunching app... bundle:'+getBundleVersion());
-		//closeUpdateWindow();
 		TiShadow.launchApp(APP_NAME);
+		closeUpdateWindow();
 		notifyUpdated();
 	} else {
 		console.log('CARMIFY: WARN - no update ready to apply');
