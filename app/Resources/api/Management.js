@@ -17,6 +17,7 @@ var BUNDLE_TIMESTAMP = "currentBundleTimestamp",
 var _updateQueue = [],
 	isProcessingUpdateQueue=false, 
 	updateWindow = null, 
+	backgroundWindow  = null,
 	activityIndicator = null, 
 	activityCallback = null;
 // interval Ids to be cleared when updates are to be applied.
@@ -24,10 +25,20 @@ var intervalIds = [];
 
 
 var createUpdateWindow = function(){
-	updateWindow = Ti.UI.createWindow({
+	
+	backgroundWindow = Ti.UI.createWindow({
 	  backgroundColor: 'black', 
-	  opacity: 0.5,
+	  //backgroundImage = 'images/background.jpg',
+	  opacity: 0.3,
 	});
+
+	updateWindow = Ti.UI.createWindow({
+		backgroundColor: 'transparent',
+		opacity: 1.0
+	  //backgroundImage = 'images/background.jpg',
+	});
+	backgroundWindow.setBackgroundImage('images/background.jpg');
+
 
 	var style;
 	if (Ti.Platform.name === 'iPhone OS'){
@@ -56,6 +67,7 @@ var createUpdateWindow = function(){
 	updateWindow.addEventListener('open', activityCallback);
 
 	updateWindow.open();
+	backgroundWindow.open();
 
 };
 
@@ -64,6 +76,9 @@ var closeUpdateWindow = function(){
 	updateWindow.removeEventListener('open', activityCallback);
     activityIndicator.hide();
 	updateWindow.close();
+	backgroundWindow.close();
+	backgroundWindow = null;
+	updateWindow = null;
 };
 
 
