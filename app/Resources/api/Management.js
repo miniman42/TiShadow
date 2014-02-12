@@ -297,6 +297,7 @@ function flushUpdateQueue() {
 		if(isUpdateReady()){
 			if (readBundleForceUpdate(STANDBY_DIR)){
 				//force the update without notification if indicated in the manifest.
+	     		createUpdateWindow();
 				applyUpdate();
 			} else {
 				notifyUpdate();
