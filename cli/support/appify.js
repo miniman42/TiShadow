@@ -11,6 +11,7 @@ _.templateSettings = {
   interpolate: /\{\{(.+?)\}\}/g
 };
 
+var defaultAppId = "<id>com.avego.AvegoApp</id>";
 
 var required_modules = [
   '<module platform="iphone" version="0.1">yy.tidynamicfont</module>',
@@ -254,7 +255,7 @@ exports.build = function(env) {
       ['iphone', 'android'].forEach(function(platform) {
         if (fs.existsSync(path.join(config.resources_path, platform))) {
           wrench.copyDirSyncRecursive(path.join(config.resources_path, platform), path.join(dest_resources, platform), {
-            filter: new RegExp("(\.png|images|high|medium|low|intro|res-.*|background.png|background.jpg|background@2x.jpg)$", "i"),
+            filter: new RegExp("(\.png|images|high|medium|low|intro|res-.*|background.png|background.jpg)$", "i"),
             whitelist: true
           });
 
@@ -302,12 +303,23 @@ exports.build = function(env) {
       if (!config.isShadowModulesIncluded) {
         required_modules = []; //if excluding shadow modules then make sure not to include them in the output tiapp.xml
       }
+
+      var replacementAppId = defaultAppId; 
+      if(config.platform === "android"){
+        replacementAppId = "<id>com.avego.avegodriver</id>"
+      }
+
       required_modules.push("</modules>");
       fs.writeFileSync(path.join(dest, "tiapp.xml"),
         source_tiapp
         .replace(/<plugins>(.|\n)*<\/plugins>/, "")
         .replace("<modules/>", "<modules></modules>")
+        .replace(defaultAppId, replacementAppId)
         .replace("</modules>", required_modules.join("\n")));
+
+
+
+
       // copy the bundle
       //      fs.writeFileSync(path.join(dest_resources, config.app_name.replace(/ /g,"_") + ".zip"),fs.readFileSync(config.bundle_file));
       fs.writeFileSync(path.join(dest_resources, config.app_name.replace(/ /g, "_") + ".zip"), fs.readFileSync(config.bundle_file));
