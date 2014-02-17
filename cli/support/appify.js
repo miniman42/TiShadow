@@ -310,14 +310,26 @@ exports.build = function(env) {
       }
 
       required_modules.push("</modules>");
+      
+
+      if(config.platform === "android"){
       fs.writeFileSync(path.join(dest, "tiapp.xml"),
         source_tiapp
         .replace(/<plugins>(.|\n)*<\/plugins>/, "")
         .replace("<modules/>", "<modules></modules>")
         .replace(defaultAppId, replacementAppId)
         .replace("</modules>", required_modules.join("\n")));
+  
+      }
+      else{
+        //iOS has no app id replacement.
+      fs.writeFileSync(path.join(dest, "tiapp.xml"),
+        source_tiapp
+        .replace(/<plugins>(.|\n)*<\/plugins>/, "")
+        .replace("<modules/>", "<modules></modules>")
+        .replace("</modules>", required_modules.join("\n")));
 
-
+      }      
 
 
       // copy the bundle
