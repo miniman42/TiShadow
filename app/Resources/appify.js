@@ -11,6 +11,11 @@ var management = require('/api/Management'),
 //indicates that the app is running in tishadow mode
 var shadowMode = true;
 
+//fix for Android intents
+if (Ti.Platform.osname === "android") {
+	Ti.App.INTENT_DATA = Ti.Android.currentActivity.intent.data;
+}
+
 var registerForPushNotification = function(){
 
 
