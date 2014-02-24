@@ -59,10 +59,33 @@ exports.delta = function(env,callback) {
 				});
 				
 				//now we need to zip the bundle
-				var del=new zip();
+				/*var del=new zip();
 				console.log("\nCreating delta zip bundle: " + config.deltabundlepath);
 				del.addLocalFolder(deldir,"");
 				del.writeZip(config.deltabundlepath);
+				*/
+				var archiver = require('archiver');
+				var output = fs.createWriteStream(config.deltabundlepath);
+				var archive = archiver('zip');
+
+				output.on('close', function() {
+				  console.log(archive.pointer() + ' total bytes');
+				  console.log('archiver has been finalized and the output file descriptor has closed.');
+				});
+
+				archive.on('error', function(err) {
+				  throw err;
+				});
+
+				archive.pipe(output);
+
+				archive.bulk([
+				  { expand: true, cwd: deldir, src: ['*/**'] }
+				]);
+
+				archive.finalize();
+	
+
 				console.log("DONE");
 			});
 		} else {
