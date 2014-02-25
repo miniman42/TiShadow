@@ -80,7 +80,7 @@ exports.delta = function(env,callback) {
 				archive.pipe(output);
 
 				archive.bulk([
-					  { expand: true, cwd: deldir, src: ['*/**', '*'], dest: 'Carma'}
+					  { expand: true, cwd: deldir, src: ['*/**', '*']}
 				]);
 
 				archive.finalize();
