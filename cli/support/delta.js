@@ -79,9 +79,8 @@ exports.delta = function(env,callback) {
 
 				archive.pipe(output);
 
-				
 				archive.bulk([
-				  { expand: true, cwd: deldir, src: ['*/**'], dest: 'Carma'}
+				  { expand: true, cwd: deldir, src: ['*/**', 'manifest.mf'], dest: 'Carma'}
 				]);
 
 				archive.finalize();
