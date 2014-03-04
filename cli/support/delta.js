@@ -5,17 +5,15 @@ var logger = require("../../server/logger.js"),
     path = require("path"),
     archiver = require('archiver'),
     zip = require('adm-zip'),
-    temp = require('temp'),
-    config = require("./config");
+    temp = require('temp');
 
 require("./fs_extension");
 
 exports.delta = function(env,callback) {
-  	config.buildPaths(env, function() {
 		//enabling tracking will mean that all temp resources are automagically cleaned up when we're done
 		temp.track();
 		//make sure the bundles exist!
-		if (fs.existsSync(config.sourcebundlepath) && fs.existsSync(config.targetbundlepath)){
+		if (fs.existsSync(env.sourcebundlepath) && fs.existsSync(env.targetbundlepath)){
 			//create a temp dir to generate the delta bundle required...
 			temp.mkdir('delta',function(err,dirPath){
 				console.log("Temporary Working Dir:"+dirPath+"\n");
@@ -27,8 +25,8 @@ exports.delta = function(env,callback) {
 				fs.mkdirSync(tgtdir);
 				fs.mkdirSync(deldir);
 				//exctract the bundles
-				var src=new zip(config.sourcebundlepath);
-				var tgt=new zip(config.targetbundlepath);
+				var src=new zip(env.sourcebundlepath);
+				var tgt=new zip(env.targetbundlepath);
 				src.extractAllTo(srcdir);
 				tgt.extractAllTo(tgtdir);
 				//read the contained manifests into arrays of strings
@@ -60,12 +58,12 @@ exports.delta = function(env,callback) {
 				
 				//now we need to zip the bundle
 				/*var del=new zip();
-				console.log("\nCreating delta zip bundle: " + config.deltabundlepath);
+				console.log("\nCreating delta zip bundle: " + env.deltabundlepath);
 				del.addLocalFolder(deldir,"");
-				del.writeZip(config.deltabundlepath);
+				del.writeZip(env.deltabundlepath);
 				*/
 				var archiver = require('archiver');
-				var output = fs.createWriteStream(config.deltabundlepath);
+				var output = fs.createWriteStream(env.deltabundlepath);
 				var archive = archiver('zip');
 
 				output.on('close', function() {
@@ -94,5 +92,4 @@ exports.delta = function(env,callback) {
 		if (callback){
 			callback();
 		}
-	});
 };
