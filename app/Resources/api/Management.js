@@ -27,58 +27,77 @@ var intervalIds = [];
 var createUpdateWindow = function(){
 	
 	backgroundWindow = Ti.UI.createWindow({
-	  backgroundColor: 'black', 
-	  //backgroundImage = 'images/background.jpg',
-	  opacity: 0.3,
+	  backgroundColor: 'transparent',
+	  //backgroundColor: '#90111111', 
+	  //opacity: 0.3,
+	  navBarHidden: false,
+	  height: "100%", 
+	  width: "100%"
 	});
 
-	updateWindow = Ti.UI.createWindow({
-		backgroundColor: 'transparent',
-		opacity: 1.0
-	  //backgroundImage = 'images/background.jpg',
-	});
-	backgroundWindow.setBackgroundImage('images/background.jpg');
 
-
-	var style;
-	if (Ti.Platform.name === 'iPhone OS'){
-	  style = Titanium.UI.iPhone.ActivityIndicatorStyle.BIG;
-	}
-	else {
-	  style = Ti.UI.ActivityIndicatorStyle.BIG;
-	}
-
-	activityIndicator = Ti.UI.createActivityIndicator({
-	  color: 'white',
-	  font: {fontSize:16},
-	  message: 'Loading...',
-	  style:style,
-	  height:Ti.UI.SIZE,
-	  width:Ti.UI.SIZE, 
-	  navBarHidden: true, 
-	  modal : false
+//	backgroundWindow.setBackgroundImage('images/background.jpg');
+	var centralView = Ti.UI.createView({
+		height: "100%", 
+		width: "100%",
+		layout: 'vertical',
+		backgroundColor: '#90111111', 	
 	});
 
-	updateWindow.add(activityIndicator);
-	activityCallback = function(e){
+	backgroundWindow.add(centralView);
+
+
+/*
+	var imageView = Ti.UI.createImageView({
+		image:'/images/logo.png'
+	}); 
+
+	centralView.add(imageView);
+*/	
+	activityIndicator = Ti.UI.createLabel({
+		top: "100dp",
+		color: 'white', 
+		font: {fontSize: "16", fontWeight: "bold"},
+		height: "200dp", 
+		width: "100%",
+		textAlign: 'center',
+		text : 'Just a sec while we improve your app experience...', 
+		zIndex: 1111
+	});
+
+	backgroundWindow.add(activityIndicator);
+
+
+	//backgroundWindow.add(activityIndicator);
+//	activityIndicator.show();
+
+	/*updateWindow.add(activityIndicator);
+	*/
+/*	activityCallback = function(e){
 		activityIndicator.show();
 	};
+	
 
-	updateWindow.addEventListener('open', activityCallback);
-
-	updateWindow.open();
+	//updateWindow.addEventListener('open', activityCallback);
+	backgroundWindow.addEventListener('open', activityCallback);
+*/
+	//updateWindow.open();
 	backgroundWindow.open();
 
 };
 
 
 var closeUpdateWindow = function(){
-	updateWindow.removeEventListener('open', activityCallback);
-    activityIndicator.hide();
-	updateWindow.close();
+	//alert('Close update...');
+	
+	//updateWindow.removeEventListener('open', activityCallback);
+    //activityIndicator.hide();
+	activityIndicator = null; 
+	//updateWindow.close();
 	backgroundWindow.close();
 	backgroundWindow = null;
-	updateWindow = null;
+	//updateWindow = null;
+
 };
 
 
@@ -133,7 +152,7 @@ exports.start = function(options){
     Ti.App.addEventListener("carma:management.update.apply", function(){ 
         
 		if (isUpdateReady() && (!isProcessingUpdateQueue)){
-			createUpdateWindow();
+		//	createUpdateWindow();
 			applyUpdate();	
         }
     });
@@ -315,6 +334,7 @@ function processUpdate(update,callback){
 		console.log("CARMIFY: Update triggered by feature toggles");
 		latestBundleVersion=getLatestUpdateBundleVersion(update.data);
 		if(localBundleVersion < latestBundleVersion) {
+		//if(true){
 			//Update required
 			if (isUpdateReady() && (getUpdateVersion()===latestBundleVersion)){
 				//don't download the same bundle twice!
@@ -492,6 +512,7 @@ function applyPatch(standby, update){
  * This function will switch in the prepared update and restart the app 
  **/
 function applyUpdate(){
+	createUpdateWindow();
 	console.log('CARMIFY: Applying update');
     if(isUpdateReady()){
 		//kill existing timers...
@@ -508,14 +529,16 @@ function applyUpdate(){
 	    Ti.App.fireEvent("carma:management.cleanup", {});
 		//Delete the app
 		setUpdateReady(false);
+
 		Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,APP_NAME).deleteDirectory(true);
 		Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory,STANDBY_DIR).rename(APP_NAME);;
 		//update bundle version
 		setBundleVersion(getUpdateVersion());
 		console.log('CARMIFY: Relaunching app... bundle:'+getBundleVersion());
 		TiShadow.launchApp(APP_NAME);
-		closeUpdateWindow();
 		notifyUpdated();
+		closeUpdateWindow();
+	
 	} else {
 		console.log('CARMIFY: WARN - no update ready to apply');
 	}
