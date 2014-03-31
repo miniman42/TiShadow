@@ -102,3 +102,17 @@ exports.sendSnippet = function(env) {
     });
   });
 };
+
+exports.exec = function(env, params) {
+  var command = params.parent.args[0];
+  config.buildPaths(env, function() {
+    var socket = require("./socket").connect();
+    socket.on("connect", function(){
+      console.log("TiShadow exec: " + command);
+      socket.emit('snippet',{code: command, platform: config.platform}, function(e) {
+        process.exit(0);
+      });
+    });
+  });
+};
+
