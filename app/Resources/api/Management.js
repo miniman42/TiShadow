@@ -57,7 +57,7 @@ var createUpdateWindow = function(){
 	activityIndicator = Ti.UI.createLabel({
 		top: "100dp",
 		color: 'white', 
-		font: {fontSize: "16", fontWeight: "bold"},
+		font: {fontSize: "16dp", fontWeight: "bold"},
 		height: "200dp", 
 		width: "100%",
 		textAlign: 'center',
