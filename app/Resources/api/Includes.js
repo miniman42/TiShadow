@@ -87,7 +87,8 @@ if (Ti.Platform.osname !== "android"){
     Titanium.UI.iOS.CoverFlowView,
     Titanium.UI.iOS.DocumentViewer,
     Titanium.UI.iOS.TabbedBar,
-    Titanium.UI.iOS.Toolbar
+    Titanium.UI.iOS.Toolbar,
+    Titanium.App.iOS.registerBackgroundService
   ];
 } else {
   var android_includes = [
