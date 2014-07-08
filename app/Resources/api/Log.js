@@ -14,6 +14,8 @@ exports.log = function(level, message) {
 };
 
 function _write(level, message) {
+	// Log forwarding disabled
+	/*
   	if (typeof message === 'object') {
   		message = JSON.stringify(message, function (key, val) {
   			if (typeof val !== 'object') {
@@ -31,4 +33,5 @@ function _write(level, message) {
       level: level.toUpperCase(),
       message: message
     });
+	*/
 }
