@@ -137,8 +137,7 @@ exports.start = function(options){
 		Ti.App.addEventListener("carma:tishadow.update.ready",function(evt){
 	        console.log('CARMIFY: Received DEV update event');
 			// pushUpdate(evt);
-			evt.updateType = 'dev_update';
-			sendBundleUpdateRequest(evt);
+			sendBundleUpdateRequest(_.extend(evt, {updateType : 'dev_update'}));
 		});
 		console.log("CARMIFY: Running in 'dev' mode...");
 	} else {
@@ -149,60 +148,118 @@ exports.start = function(options){
     Ti.App.addEventListener("carma:feature.toggles", function(evt){ 
         console.log('CARMIFY: Received feature toggles');
 		// pushUpdate(evt);
-		evt.updateType = 'feature_toggle';
-		sendBundleUpdateRequest(evt);
+		sendBundleUpdateRequest(_.extend(evt, {updateType : 'feature_toggle'}));
     });
 
 	//Apply events come in when the app decides its ok to process the update and reload.
- //    Ti.App.addEventListener("carma:management.update.apply", function(){ 
-        
-	// 	if (isUpdateReady() && (!isProcessingUpdateQueue)){
-	// 	//	createUpdateWindow();
-	// 		applyUpdate();	
- //        }
- //    });
+    Ti.App.addEventListener("carma:management.update.apply", function(){ 
+    	if(isUpdateReady()){
+    		_applyUpdate();
+    	}
+    });
     
-	// Ti.App.addEventListener("carma:management.store.interval", function(data) {
-	//     intervalIds.push(data.intervalId);
-	//     console.log("CARMIFY: Storing interval for later cancellation : "+data.intervalId);
- //    });
+	Ti.App.addEventListener("carma:management.store.interval", function(data) {
+	    intervalIds.push(data.intervalId);
+	    console.log("CARMIFY: Storing interval for later cancellation : "+data.intervalId);
+    });
 
-	// Ti.App.addEventListener("carma:management.remove.interval", function(data) {
-	// 	//clearing the interval.
-	// 	clearInterval(data.intervalId);
-	//     intervalIds=_.without(intervalIds,data.intervalId);
-	//     console.log("CARMIFY: Removing stored interval reference : "+data.intervalId);
- //    });
+	Ti.App.addEventListener("carma:management.remove.interval", function(data) {
+		//clearing the interval.
+		clearInterval(data.intervalId);
+	    intervalIds=_.without(intervalIds,data.intervalId);
+	    console.log("CARMIFY: Removing stored interval reference : "+data.intervalId);
+    });
 
 
 	console.log('CARMIFY: Launching app...');
 	TiShadow.launchApp(path_name);
 };
 
+function _applyUpdate() {
+	createUpdateWindow();
+	bundleUpdateModule.applyUpdateOnline({
+		standby_dir : STANDBY_DIR, 
+		app_name : APP_NAME, 
+		onStateChanged : function(response) {
+			console.log('CARMIFY: bundle update state change -> ' + response.state);
+			if(response.state === 'INTERRUPTED'){
+				notifyUpdated();
+				return;
+			}
+			if(response.state === 'APPLIED'){
+				console.log("CARMIFY: Relaunching app... bundle '" + getBundleVersion() + "'");
+				TiShadow.launchApp(APP_NAME);
+				notifyUpdated();
+				closeUpdateWindow();
+				return;
+			}
+		}
+	});
+}
+
 function sendBundleUpdateRequest (argument) {
 
 	var latestBundleVersion = argument.updateType === 'feature_toggle' ? getLatestUpdateBundleVersion(argument.data) : Date.now();
+	var latestBundleSymbol = argument.updateType === 'feature_toggle' ? latestBundleVersion : 'DEV';
+	
+	if(argument.updateType === 'feature_toggle' && latestBundleVersion <= getBundleVersion()){
+		console.log('CARMIFY: App already up-to-date, skip to send bundle update request to background service.');
+		return;
+	}
+	
+	console.log("CARMIFY: Requesting bundle update: '" + getBundleVersion() + "' -> " + latestBundleSymbol + "'...");
 	
 	bundleUpdateModule.send({
 		update_type : argument.updateType, 
 		latest_bundle_version : latestBundleVersion, 
-		bundle_download_url : getBundleDownloadUrl(argument, argument.updateType === 'feature_toggle' ? latestBundleVersion : 'DEV'), 
+		bundle_download_url : getBundleDownloadUrl(argument, latestBundleSymbol), 
 		standby_dir : STANDBY_DIR, 
 		bundle_decompress_dir : DOWNLOAD_DIR, 
 		app_name : APP_NAME, 
-
-		onStateChanged : function (response) {
+		onStateChanged : function onStateChanged (response) {
+			/**
+	 		 * Fire whenever bundle update process's state has been changed. Critical path for states change in the following: 
+			 * 1. CHECKED - local and latest bundle checked, and ready for bundle download.
+			 * 2. DOWNLOADED - latest bundle download, and ready for bundle decompression.
+			 * 3. DECOMPRESSED - latest bundle has been extracted.
+			 * 4. READY_FOR_APPLY - bundle has been applied to standby directory, and ready to go online.
+			 * 5. APPLIED - latest bundle has been applied to current application resources directory. And these resources would be effective whenever the application is launched next time.
+			 * 6. INTERRUPTED - a state represents any fails during the above work flow.
+			 */
 			console.log('CARMIFY: bundle update state change -> ' + response.state);
+			if(response.state === 'INTERRUPTED'){
+				if(latestBundleVersion <= getBundleVersion()){
+					notifyUpdated();	
+				}
+				if(latestBundleVersion == getUpdateVersion()){
+					notifyUpdate();
+				}
+				return;
+			}
+			if(response.state === 'READY_FOR_APPLY'){
+				if(response.forceUpdate === true){
+					createUpdateWindow();
+				}
+				notifyUpdate();
+			}
+			if(response.state === 'APPLIED'){
+				console.log("CARMIFY: Relaunching app... bundle '" + getBundleVersion() + "'");
+				TiShadow.launchApp(APP_NAME);
+				notifyUpdated();
+				closeUpdateWindow();
+				return;
+			}
 		}
 	});
 }
 
 function getBundleDownloadUrl (argument, latestBundleVersion) {
-	if (argument.data.url){return argument.data.url;} 
+	if (argument && argument.data && argument.data.url){return argument.data.url;} 
 	var osPart = Titanium.Platform.osname === 'android' ? 'android' : 'ios';
 	return "https://developer.avego.com/bundles/delta.php?os="+osPart+"&src="+getBundleVersion()+"&tgt="+latestBundleVersion;
 }
 
+//@Deprecated
 //This adds an update event to the queue of pending update triggers and flushes it if not already processing them.
 function pushUpdate(evt){
 	_updateQueue.push(evt);
@@ -247,11 +304,9 @@ function getUpdateVersion(){
 
 function setUpdateReady(ready,version){
 	console.log('CARMIFY: set updateReady: '+ready);
-	Ti.App.Properties.setString('updateReady','' + ready);
-	console.log('CARMIFY: updateReady state been set.');
+	Ti.App.Properties.setBool('updateReady',ready);
 	if (version) {
 		Ti.App.Properties.setString('updateVersion',version);
-		console.log('CARMIFY: updateVersion been set.');
 	}
 };
 
@@ -311,15 +366,12 @@ function installAppRevisionBundle(){
 	if(Titanium.Platform.osname !== 'android'){
 		appdir.remoteBackup=false;
 	}
-
-	Compression.unzip(Ti.Filesystem.applicationDataDirectory + "/" + APP_NAME, Ti.Filesystem.resourcesDirectory + "/" + APP_NAME + '.zip', true);
-
+	Compression.unzip(Ti.Filesystem.applicationDataDirectory + "/" + APP_NAME, Ti.Filesystem.resourcesDirectory + "/" + APP_NAME + '.zip',true);
 	console.log('CARMIFY: Installed bundle');
 	
 	//update the installed revision and bundle
 	setInstalledRevision(getAppRevision());	
-	setBundleVersion(readBundleVersion());
-	// setBundleVersion(1389284855);
+	setBundleVersion(readBundleVersion());	
 };
 
 /** 
@@ -343,7 +395,7 @@ function flushUpdateQueue() {
 		// pull the lru event val off the queue
 		var update=_updateQueue.shift();
 		//callback will recur....
-		testProcessUpdate(update,flushUpdateQueue);
+		processUpdate(update,flushUpdateQueue);
 	} else {
 		console.log("CARMIFY: Update queue empty");
 		isProcessingUpdateQueue = false;
@@ -390,37 +442,6 @@ function processUpdate(update,callback){
 	}
 };
 
-function testProcessUpdate(update,callback){
-	console.log("CARMIFY: Processing queued update event");
-	var localBundleVersion = 1389284855;  
-	var latestBundleVersion = 1402406694;
-
-	if (update.type === "carma:feature.toggles"){
-		console.log("CARMIFY: Update triggered by feature toggles");
-		if(localBundleVersion < latestBundleVersion) {
-		//if(true){
-			//Update required
-			if (isUpdateReady() && (getUpdateVersion()===latestBundleVersion)){
-				//don't download the same bundle twice!
-				console.log('CARMIFY: Not downloading bundle as it is already pending: ' + latestBundleVersion);
-				callback();
-			} else { 
-				clearPendingUpdate(); //clear any pending update before downloading a new update.
-				downloadUpdate(latestBundleVersion,function() { prepareUpdate(latestBundleVersion,callback); }, function() { callback(); });
-			}
-		} else { //in case this update is not applicable we still need to callback;
-			console.log("CARMIFY: Not updating as local bundle version is newest");
-			callback();
-		}
-	} else if (update.type === "carma:tishadow.update.ready"){
-		console.log("CARMIFY: Update triggered by DEV update - NOTE: min/max carma.revision is not considered for dev mode updates!");
-		latestBundleVersion=1402406694;
-		clearPendingUpdate(); //clear any pending update before downloading a new update.
-		downloadUpdate(latestBundleVersion,function() { prepareUpdate(latestBundleVersion,callback); }, function() { callback(); },update.data.url);
-	}
-};
-
-
 
 function downloadUpdate(bundleTimestamp,success,fail,url){
 	console.log('CARMIFY: Downloading bundle: ' + bundleTimestamp);
@@ -438,6 +459,7 @@ function downloadUpdate(bundleTimestamp,success,fail,url){
 	var xhr = Ti.Network.createHTTPClient();
 	xhr.setTimeout(30000);
 	xhr.onload=function(e) {
+		var gotBundle=false;
 		try {
 			console.log('CARMIFY: Unpacking new production bundle: ' + DOWNLOAD_DIR);
 			var zip_file = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, DOWNLOAD_DIR + '.zip');
@@ -458,25 +480,21 @@ function downloadUpdate(bundleTimestamp,success,fail,url){
 	 		}
 			// Extract
 			var dataDir=Ti.Filesystem.applicationDataDirectory + "/";
-
-			// var json = {dest : dataDir + DOWNLOAD_DIR, src : dataDir + DOWNLOAD_DIR + '.zip', overwrite : true}; 
-			// Compression.unzipAsyn(json, function (argument) {
-			// 		//cleanup the download
-			// 	zip_file.deleteFile();
-			// 	// if (argument && argument.message === 'success'){
-			// 	if (success){success();}
-			// 	// } else {
-			// 	// 	if (fail){fail();}
-			// 	// }
-			// });
-
-			Compression.unzip(dataDir + DOWNLOAD_DIR, dataDir + DOWNLOAD_DIR + '.zip', true);
+			Compression.unzip(dataDir + DOWNLOAD_DIR, dataDir + DOWNLOAD_DIR + '.zip',true);
+			//cleanup the download
 			zip_file.deleteFile();
-			if (success){success();}
-
+			gotBundle=true;
 		} catch (e) {
 			console.log('CARMIFY: WARN - Error unpacking bundle: ' + bundleTimestamp +" - " +JSON.stringify(e));
-			if (fail){fail();}
+		}
+		if (gotBundle){
+			if (success){
+				success();
+			}
+		} else {
+			if (fail){
+				fail();
+			}
 		}
 	};
 	xhr.onerror = function(e){
