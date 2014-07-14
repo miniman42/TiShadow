@@ -184,15 +184,18 @@ function _applyUpdate() {
 			console.log('CARMIFY: bundle update state change -> ' + response.state);
 			if(response.state === 'INTERRUPTED'){
 				notifyUpdated();
+				closeUpdateWindow();
 				return;
 			}
 			if(response.state === 'APPLIED'){
 				console.log("CARMIFY: Relaunching app... bundle '" + getBundleVersion() + "'");
 				TiShadow.launchApp(APP_NAME);
 				notifyUpdated();
-				closeUpdateWindow();
+				// When the app is relaunched, this window will be closed too.
+				// closeUpdateWindow();
 				return;
 			}
+			closeUpdateWindow();
 		}
 	});
 }
