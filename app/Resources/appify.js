@@ -68,7 +68,78 @@ Ti.App.addEventListener("carma:shell.register.token", function(){
 });
 
 
+/**
+ * Indicator window with a spinner and a label
+ *
+ * @param {Object} args
+ */
+function createIndicatorWindow(args) {
+    var args = args || {};
+    var text = args.text || 'Setting up Carma ...';
 
+    var win = Titanium.UI.createWindow({
+        height:           Ti.UI.FILL,
+        width:            Ti.UI.FILL,
+        backgroundImage:  'Default.png',
+        layout:           'Vertical',
+        zIndex:           9999
+    });
+
+    function osIndicatorStyle() {
+        style = Ti.UI.iPhone.ActivityIndicatorStyle.DARK;
+
+        if ('iPhone OS' !== Ti.Platform.name) {
+            style = Ti.UI.ActivityIndicatorStyle.DARK;
+        }
+
+        return style;
+    }
+
+    var activityIndicator = Ti.UI.createActivityIndicator({
+        top:     "65%",
+        height:  Ti.UI.SIZE,
+        width:   Ti.UI.SIZE,
+        style:   osIndicatorStyle(),
+    });
+
+    var label = Titanium.UI.createLabel({
+        top:     "8dp", // Really a margin as the parent layout is vertical
+        width:   Ti.UI.SIZE,
+        height:  Ti.UI.SIZE,
+        text:    text,
+        textAlign: Ti.UI.TEXT_ALIGNMENT_CENTER,
+        color:   '#666',
+        font:    { fontSize: 11 }
+    });
+
+    win.add(activityIndicator);
+    win.add(label);
+
+    function openIndicator() {
+        win.open();
+        activityIndicator.show();
+    }
+
+    win.openIndicator = openIndicator;
+
+    function closeIndicator() {
+        activityIndicator.hide();
+        win.close();
+    }
+
+    win.closeIndicator = closeIndicator;
+
+    return win;
+}
+
+
+// Display a spinner if the bundle doesn't exist as it takes quite a while to unzip
+var existing = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, path_name);
+var indicator = null;
+if (existing.exists() !== true) {
+    indicator = createIndicatorWindow();
+    indicator.openIndicator();
+}
 
 
 
@@ -76,6 +147,10 @@ Ti.App.addEventListener("carma:shell.register.token", function(){
 //must be called in all modes
 //alert('Path name is ' + path_name);
 management.initialise(path_name);
+if (indicator) {
+    indicator.closeIndicator();
+    indicator = null;
+}
 management.start({
     dev: devMode,
     proto: properties.hasOwnProperty("tishadow") ? properties.tishadow.proto : "{{proto}}",
