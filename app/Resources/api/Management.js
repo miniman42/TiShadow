@@ -3,7 +3,8 @@ var TiShadow = require("/api/TiShadow"),
     Compression = require('ti.compression'),
     log = require('/api/Log'), 
     utils = require('/api/Utils'), 
-    manifestHandler = require('/api/ManifestHandler');
+    manifestHandler = require('/api/ManifestHandler'), 
+    bundleUpdateModule = require('ma.car.tishadow.bundle.update');
 
 var BUNDLE_TIMESTAMP = "currentBundleTimestamp", 
     MIN_APP_REVISION = "minAppRevision", 
@@ -114,8 +115,8 @@ exports.initialise = function(name){
 	var appRevision = getAppRevision();
 	
 	//if this is a new or updated native revision
-	var existing = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, APP_NAME);
-	if ((appRevision!==getInstalledRevision())||(existing.exists()!==true)){
+	var applicationResourceDirectory = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, APP_NAME);
+	if ((appRevision!==getInstalledRevision())||(applicationResourceDirectory.exists()!==true)){
 		//need to install the new revision
 		installAppRevisionBundle();		
 	}
@@ -135,7 +136,8 @@ exports.start = function(options){
 		});
 		Ti.App.addEventListener("carma:tishadow.update.ready",function(evt){
 	        console.log('CARMIFY: Received DEV update event');
-			pushUpdate(evt);
+			// pushUpdate(evt);
+			sendBundleUpdateRequest(_.extend(evt, {updateType : 'dev_update'}));
 		});
 		console.log("CARMIFY: Running in 'dev' mode...");
 	} else {
@@ -145,16 +147,15 @@ exports.start = function(options){
     //Feature toggles come in on Launch or resume of the internal app and when there is any change to them in the lifecycle of the app.
     Ti.App.addEventListener("carma:feature.toggles", function(evt){ 
         console.log('CARMIFY: Received feature toggles');
-		pushUpdate(evt);
+		// pushUpdate(evt);
+		sendBundleUpdateRequest(_.extend(evt, {updateType : 'feature_toggle'}));
     });
 
 	//Apply events come in when the app decides its ok to process the update and reload.
     Ti.App.addEventListener("carma:management.update.apply", function(){ 
-        
-		if (isUpdateReady() && (!isProcessingUpdateQueue)){
-		//	createUpdateWindow();
-			applyUpdate();	
-        }
+    	if(isUpdateReady()){
+    		_applyUpdate();
+    	}
     });
     
 	Ti.App.addEventListener("carma:management.store.interval", function(data) {
@@ -174,6 +175,94 @@ exports.start = function(options){
 	TiShadow.launchApp(path_name);
 };
 
+function _applyUpdate() {
+	createUpdateWindow();
+	bundleUpdateModule.applyUpdateOnline({
+		standby_dir : STANDBY_DIR, 
+		app_name : APP_NAME, 
+		onStateChanged : function(response) {
+			console.log('CARMIFY: bundle update state change -> ' + response.state);
+			if(response.state === 'INTERRUPTED'){
+				notifyUpdated();
+				closeUpdateWindow();
+				return;
+			}
+			if(response.state === 'APPLIED'){
+				console.log("CARMIFY: Relaunching app... bundle '" + getBundleVersion() + "'");
+				TiShadow.launchApp(APP_NAME);
+				notifyUpdated();
+				// When the app is relaunched, this window will be closed too.
+				// closeUpdateWindow();
+				return;
+			}
+			closeUpdateWindow();
+		}
+	});
+}
+
+function sendBundleUpdateRequest (argument) {
+
+	var latestBundleVersion = argument.updateType === 'feature_toggle' ? getLatestUpdateBundleVersion(argument.data) : Date.now();
+	var latestBundleSymbol = argument.updateType === 'feature_toggle' ? latestBundleVersion : 'DEV';
+	
+	if(argument.updateType === 'feature_toggle' && latestBundleVersion <= getBundleVersion()){
+		console.log('CARMIFY: App already up-to-date, skip to send bundle update request to background service.');
+		return;
+	}
+	
+	console.log("CARMIFY: Requesting bundle update: '" + getBundleVersion() + "' -> " + latestBundleSymbol + "'...");
+	
+	bundleUpdateModule.send({
+		update_type : argument.updateType, 
+		latest_bundle_version : latestBundleVersion, 
+		bundle_download_url : getBundleDownloadUrl(argument, latestBundleSymbol), 
+		standby_dir : STANDBY_DIR, 
+		bundle_decompress_dir : DOWNLOAD_DIR, 
+		app_name : APP_NAME, 
+		onStateChanged : function onStateChanged (response) {
+			/**
+	 		 * Fire whenever bundle update process's state has been changed. Critical path for states change in the following: 
+			 * 1. CHECKED - local and latest bundle checked, and ready for bundle download.
+			 * 2. DOWNLOADED - latest bundle download, and ready for bundle decompression.
+			 * 3. DECOMPRESSED - latest bundle has been extracted.
+			 * 4. READY_FOR_APPLY - bundle has been applied to standby directory, and ready to go online.
+			 * 5. APPLIED - latest bundle has been applied to current application resources directory. And these resources would be effective whenever the application is launched next time.
+			 * 6. INTERRUPTED - a state represents any fails during the above work flow.
+			 */
+			console.log('CARMIFY: bundle update state change -> ' + response.state);
+			if(response.state === 'INTERRUPTED'){
+				if(latestBundleVersion <= getBundleVersion()){
+					notifyUpdated();	
+				}
+				if(latestBundleVersion == getUpdateVersion()){
+					notifyUpdate();
+				}
+				return;
+			}
+			if(response.state === 'READY_FOR_APPLY'){
+				if(response.forceUpdate === true){
+					createUpdateWindow();
+				}
+				notifyUpdate();
+			}
+			if(response.state === 'APPLIED'){
+				console.log("CARMIFY: Relaunching app... bundle '" + getBundleVersion() + "'");
+				TiShadow.launchApp(APP_NAME);
+				notifyUpdated();
+				closeUpdateWindow();
+				return;
+			}
+		}
+	});
+}
+
+function getBundleDownloadUrl (argument, latestBundleVersion) {
+	if (argument && argument.data && argument.data.url){return argument.data.url;} 
+	var osPart = Titanium.Platform.osname === 'android' ? 'android' : 'ios';
+	return "https://developer.avego.com/bundles/delta.php?os="+osPart+"&src="+getBundleVersion()+"&tgt="+latestBundleVersion;
+}
+
+//@Deprecated
 //This adds an update event to the queue of pending update triggers and flushes it if not already processing them.
 function pushUpdate(evt){
 	_updateQueue.push(evt);
@@ -640,4 +729,3 @@ function copyFile(filename, sourceDirectory, destinationDirectory) {
         }
         destinationFile.write(fileToCopy.read()); 
 };
-

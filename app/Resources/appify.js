@@ -43,13 +43,15 @@ Ti.Network.registerForPushNotifications({
 if (Ti.Platform.osname === "android") {
     try {
         var file = Titanium.Filesystem.getFile(Titanium.Filesystem.externalStorageDirectory, "instrument.json");
-        var blob = file.read();
-        var content = blob.text;
-        if (content) {
-            properties = JSON.parse(content);
+        if(file.exists()){
+        	var blob = file.read();
+        	var content = blob.text;
+        	if (content) {
+            	properties = JSON.parse(content);
+       		 }
+        	file = null;
+        	blob = null;
         }
-        file = null;
-        blob = null;
     } catch (e) {}
 }
 

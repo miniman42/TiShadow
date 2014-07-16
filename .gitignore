@@ -2,3 +2,5 @@ server/npm-debug.log
 .DS_Storenode_modules
 node_modules
 .tern-port
+.project
+ruble/cache.en_US.yml
