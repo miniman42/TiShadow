@@ -77,42 +77,42 @@ function createIndicatorWindow(args) {
     var args = args || {};
     var text = args.text || 'Setting up Carma ...';
 
+	var background = (Ti.Platform.osname === "android") ? 'images/background.png' : 'Default.png';
     var win = Titanium.UI.createWindow({
         height:           Ti.UI.FILL,
         width:            Ti.UI.FILL,
-        backgroundImage:  'Default.png',
-        layout:           'Vertical',
-        zIndex:           9999
+        backgroundImage:  background,
+        layout:           'vertical'
+    });
+    
+    var filler1 = Ti.UI.createView({
+        height:  "65%",
+        width:   Ti.UI.SIZE
     });
 
-    function osIndicatorStyle() {
-        style = Ti.UI.iPhone.ActivityIndicatorStyle.DARK;
-
-        if ('iPhone OS' !== Ti.Platform.name) {
-            style = Ti.UI.ActivityIndicatorStyle.DARK;
-        }
-
-        return style;
-    }
-
     var activityIndicator = Ti.UI.createActivityIndicator({
-        top:     "65%",
         height:  Ti.UI.SIZE,
         width:   Ti.UI.SIZE,
-        style:   osIndicatorStyle(),
+        style:   (Ti.Platform.osname === "android") ? Ti.UI.ActivityIndicatorStyle.DARK : Ti.UI.iPhone.ActivityIndicatorStyle.DARK
+    });
+
+    var filler2 = Ti.UI.createView({
+        height:  "8dp",
+        width:   Ti.UI.SIZE
     });
 
     var label = Titanium.UI.createLabel({
-        top:     "8dp", // Really a margin as the parent layout is vertical
         width:   Ti.UI.SIZE,
         height:  Ti.UI.SIZE,
         text:    text,
         textAlign: Ti.UI.TEXT_ALIGNMENT_CENTER,
         color:   '#666',
-        font:    { fontSize: 11 }
+        font:    { fontSize: "11dp" }
     });
 
+    win.add(filler1);
     win.add(activityIndicator);
+    win.add(filler2);
     win.add(label);
 
     function openIndicator() {
