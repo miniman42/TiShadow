@@ -252,18 +252,32 @@ exports.build = function(env) {
       if (fs.existsSync(config.fonts_path)) {
         wrench.copyDirSyncRecursive(config.fonts_path, dest_fonts);
       }
-      //copy the internationalisation files
-      if (fs.existsSync(path.join(config.i18n_path))) {
-        wrench.copyDirSyncRecursive(path.join(config.i18n_path), path.join(dest_i18n), {
-          preserve: true
-        });
-      }
-      //copy splash screen and icons
-      ['iphone', 'android'].forEach(function(platform) {
+
+       //copy the internationalisation files
+        if (fs.existsSync(path.join(config.i18n_path))) {
+          wrench.copyDirSyncRecursive(path.join(config.i18n_path), path.join(dest_i18n), {
+            preserve: true
+          });
+        }
+
+      
+      //copy splash screen and icons 
+      ["iphone", "android"].forEach(function(platform) {
+
+          
+        
+        console.log("DEALING WITH " + platform);
+        console.log("Checking path " + path.join(config.resources_path, platform));
+        console.log("Is it there? " + fs.existsSync(path.join(config.resources_path, platform)));
+
         if (fs.existsSync(path.join(config.resources_path, platform))) {
+
+          console.log("Copying from " + path.join(config.resources_path, platform)+  " to " + path.join(dest_resources, platform));
+        
+
           wrench.copyDirSyncRecursive(path.join(config.resources_path, platform), path.join(dest_resources, platform), {
-            filter: new RegExp("(\.png|images|high|medium|low|intro|res-.*|background.png|background.jpg)$", "i"),
-            whitelist: true
+            filter: new RegExp("(\.png|images|high|medium|low|intro|res-.*|background.png|background.jpg|default.png)$", "i"),
+            whitelist: true,
           });
 
         }
@@ -272,16 +286,20 @@ exports.build = function(env) {
             preserve: true
           });
         }
+        
 
-
+        
         if (fs.existsSync(path.join(config.platform_path, platform))) {
           wrench.copyDirSyncRecursive(path.join(config.platform_path, platform), path.join(dest_platform, platform));
         }
+        
+        //IMAGES WORK
         var heavyImages = platform + "/images/"
         var scrollerImages = platform + "/images/intro";
         //console.log('Resources Path: ' + config.resources_path);
        // console.log('Scroller Images: ' + scrollerImages);
         if (platform === "android") {
+          console.log("This is android");
           var paths = new Array("high", "medium", "low");
           for (var i = 0; i < paths.length; i++) {
             var scrollerImagePath = platform + "/" + paths[i] + "/images/intro";
@@ -299,11 +317,10 @@ exports.build = function(env) {
           }
         }
         //TODO: copy over the heavier images
-        /*if(fs.existsSync(path.join(config.resources_path,heavyImages))) {
-          wrench.copyDirSyncRecursive(path.join(config.resources_path,heavyImages),path.join(dest_resources,heavyImages));
-        }*/
-
-
+        // if(fs.existsSync(path.join(config.resources_path,heavyImages))) {
+        //   wrench.copyDirSyncRecursive(path.join(config.resources_path,heavyImages),path.join(dest_resources,heavyImages));
+        // }
+     
       });
       // copy tiapp.xml and inject modules
       var source_tiapp = fs.readFileSync(path.join(config.base, "tiapp.xml"), 'utf8');
@@ -337,12 +354,12 @@ exports.build = function(env) {
         .replace("</modules>", required_modules.join("\n")));
 
       }      
-
+    
 
       // copy the bundle
       //      fs.writeFileSync(path.join(dest_resources, config.app_name.replace(/ /g,"_") + ".zip"),fs.readFileSync(config.bundle_file));
       fs.writeFileSync(path.join(dest_resources, config.app_name.replace(/ /g, "_") + ".zip"), fs.readFileSync(config.bundle_file));
-
+    
     }
   });
 };
