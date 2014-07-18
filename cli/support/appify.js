@@ -221,6 +221,7 @@ exports.build = function(env) {
   var dest_fonts = path.join(dest_resources, "fonts");
   var dest_intro = path.join(dest_resources, "")
   var dest_modules = path.join(dest, "modules");
+  var dest_i18n = path.join(dest, "i18n");
   var dest_platform = path.join(dest, "platform");
   var template_file = path.join(tishadow_app, "Resources", "appify.js");
 
@@ -250,6 +251,12 @@ exports.build = function(env) {
       console.log('Destination: ' + dest_fonts);
       if (fs.existsSync(config.fonts_path)) {
         wrench.copyDirSyncRecursive(config.fonts_path, dest_fonts);
+      }
+      //copy the internationalisation files
+      if (fs.existsSync(path.join(config.i18n_path))) {
+        wrench.copyDirSyncRecursive(path.join(config.i18n_path), path.join(dest_i18n), {
+          preserve: true
+        });
       }
       //copy splash screen and icons
       ['iphone', 'android'].forEach(function(platform) {
