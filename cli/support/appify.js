@@ -308,6 +308,10 @@ exports.build = function(env) {
               wrench.copyDirSyncRecursive(path.join(config.resources_path, scrollerImagePath), path.join(dest_resources, scrollerImagePath));
             }
           }
+          //Copy the splash screen image for higher res screens as the default. 
+          var hasHighRes = fs.existsSync(path.join(config.resources_path,"android/images/res-notlong-port-hdpi/default.png")); 
+          fs.writeFileSync(path.join(dest_resources, "android/images/default.png"), fs.readFileSync(path.join(config.resources_path,"android/images/res-notlong-port-hdpi/default.png")));
+     
 
         } else {
           //copy the scroller images 
