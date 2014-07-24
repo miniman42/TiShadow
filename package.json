@@ -3,8 +3,8 @@
   "version": "2.3.37-carma",
   "dependencies": {
     "jade": ">= 0.0.1",
-    "socket.io": ">= 0.9.6",
-    "socket.io-client": ">=0.9.11",
+    "socket.io": "0.9.x",
+    "socket.io-client": "0.9.x",
     "colors": ">=0.6.0-1",
     "commander": "1.0.x",
     "pkginfo": "0.2.3",
