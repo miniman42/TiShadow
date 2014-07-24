@@ -75,9 +75,10 @@ Ti.App.addEventListener("carma:shell.register.token", function(){
  */
 function createIndicatorWindow(args) {
     var args = args || {};
-    var text = args.text || 'Setting up Carma ...';
+    var text = args.text || L("shell_intro_pleasewait");
+    var cb = args.ready || null;
 
-	var background = (Ti.Platform.osname === "android") ? 'images/background.png' : 'Default.png';
+    var background = (Ti.Platform.osname === "android") ? 'images/default.png' : 'Default.png';
     var win = Titanium.UI.createWindow({
         height:           Ti.UI.FILL,
         width:            Ti.UI.FILL,
@@ -86,7 +87,7 @@ function createIndicatorWindow(args) {
     });
     
     var filler1 = Ti.UI.createView({
-        height:  "65%",
+        height:  "75%",
         width:   Ti.UI.SIZE
     });
 
@@ -114,8 +115,24 @@ function createIndicatorWindow(args) {
     win.add(activityIndicator);
     win.add(filler2);
     win.add(label);
+    filler1 = null;
+    filler2 = null;
+    label = null;
 
     function openIndicator() {
+        win.addEventListener("androidback", function() {
+            // Ignore
+        });
+
+        win.addEventListener("postlayout", function() {
+            if (cb) {
+                // As much as I hate timeouts/delays (they tend to lead to race conditions),
+                // I couldn't find another way here as otherwise the spinner doesn't spin on some Android platforms.
+                // In the worst case, we'll get a non-spinning spinner on some Android platforms...
+                setTimeout(cb, 500);
+            }
+        });
+
         win.open();
         activityIndicator.show();
     }
@@ -125,6 +142,8 @@ function createIndicatorWindow(args) {
     function closeIndicator() {
         activityIndicator.hide();
         win.close();
+        activityIndicator = null;
+        win = null;
     }
 
     win.closeIndicator = closeIndicator;
@@ -132,25 +151,15 @@ function createIndicatorWindow(args) {
     return win;
 }
 
-
-// Display a spinner if the bundle doesn't exist as it takes quite a while to unzip
-var existing = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, path_name);
+// This will contain our spinner (if enabled)
 var indicator = null;
-if (existing.exists() !== true) {
-    indicator = createIndicatorWindow();
-    indicator.openIndicator();
-}
 
 
-
+var startApp = function() {
 //handle the setting up of resources for new/updated apps
 //must be called in all modes
 //alert('Path name is ' + path_name);
 management.initialise(path_name);
-if (indicator) {
-    indicator.closeIndicator();
-    indicator = null;
-}
 management.start({
     dev: devMode,
     proto: properties.hasOwnProperty("tishadow") ? properties.tishadow.proto : "{{proto}}",
@@ -158,3 +167,18 @@ management.start({
     port: properties.hasOwnProperty("tishadow") ? properties.tishadow.port : "{{port}}",
     room: properties.hasOwnProperty("tishadow") ? properties.tishadow.room : "{{room}}"
 });
+if (indicator) {
+    indicator.closeIndicator();
+    indicator = null;
+}
+}
+
+// Display a spinner if the bundle doesn't exist as it takes quite a while to unzip
+var existing = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, path_name);
+var displayScroller = (!Ti.App.Properties.getBool("carma:intro.displayed", false) && !properties.noscroller && Ti.App.Properties.getString("carma.mode").toLowerCase() !== "hop");
+if (existing.exists() !== true || displayScroller) {
+    indicator = createIndicatorWindow({ready: startApp});
+    indicator.openIndicator();
+} else {
+    startApp();
+}
