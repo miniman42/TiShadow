@@ -214,7 +214,7 @@ function sendBundleUpdateRequest (argument) {
 	
 	bundleUpdateModule.send({
 		update_type : argument.updateType, 
-		latest_bundle_version : latestBundleVersion, 
+		latest_bundle_version : '' + latestBundleVersion, 
 		bundle_download_url : getBundleDownloadUrl(argument, latestBundleSymbol), 
 		standby_dir : STANDBY_DIR, 
 		bundle_decompress_dir : DOWNLOAD_DIR, 
