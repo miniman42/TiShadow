@@ -249,7 +249,7 @@ function sendBundleUpdateRequest (argument) {
 				console.log("CARMIFY: Relaunching app... bundle '" + getBundleVersion() + "'");
 				TiShadow.launchApp(APP_NAME);
 				notifyUpdated();
-				closeUpdateWindow();
+				// closeUpdateWindow();
 				return;
 			}
 		}
