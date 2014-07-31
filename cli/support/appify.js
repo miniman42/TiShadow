@@ -298,7 +298,7 @@ exports.build = function(env) {
         var scrollerImages = platform + "/images/intro";
         //console.log('Resources Path: ' + config.resources_path);
        // console.log('Scroller Images: ' + scrollerImages);
-        if (platform === "android") {
+        if (platform === "android" && config.platform === "android") {
           console.log("This is android");
           var paths = new Array("high", "medium", "low");
           for (var i = 0; i < paths.length; i++) {
