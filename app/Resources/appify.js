@@ -124,7 +124,8 @@ function createIndicatorWindow(args) {
             // Ignore
         });
 
-        win.addEventListener("postlayout", function() {
+        win.addEventListener("postlayout", function executeReadyCallback() {
+            win.removeEventListener("postlayout", executeReadyCallback);
             if (cb) {
                 // As much as I hate timeouts/delays (they tend to lead to race conditions),
                 // I couldn't find another way here as otherwise the spinner doesn't spin on some Android platforms.
