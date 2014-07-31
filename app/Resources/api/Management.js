@@ -214,7 +214,7 @@ function sendBundleUpdateRequest (argument) {
 	
 	bundleUpdateModule.send({
 		update_type : argument.updateType, 
-		latest_bundle_version : latestBundleVersion, 
+		latest_bundle_version : '' + latestBundleVersion, 
 		bundle_download_url : getBundleDownloadUrl(argument, latestBundleSymbol), 
 		standby_dir : STANDBY_DIR, 
 		bundle_decompress_dir : DOWNLOAD_DIR, 
@@ -241,7 +241,11 @@ function sendBundleUpdateRequest (argument) {
 			}
 			if(response.state === 'READY_FOR_APPLY'){
 				if(response.forceUpdate === true){
-					createUpdateWindow();
+					if(Ti.Platform.osname === 'android'){
+						createUpdateWindow();	
+					}else{
+						Ti.App.fireEvent("carma:management.update.apply");
+					}
 				}
 				notifyUpdate();
 			}
@@ -249,7 +253,7 @@ function sendBundleUpdateRequest (argument) {
 				console.log("CARMIFY: Relaunching app... bundle '" + getBundleVersion() + "'");
 				TiShadow.launchApp(APP_NAME);
 				notifyUpdated();
-				closeUpdateWindow();
+				// closeUpdateWindow();
 				return;
 			}
 		}
