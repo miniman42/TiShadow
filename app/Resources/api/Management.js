@@ -4,7 +4,7 @@ var TiShadow = require("/api/TiShadow"),
     log = require('/api/Log'), 
     utils = require('/api/Utils'), 
     manifestHandler = require('/api/ManifestHandler'), 
-    bundleUpdateModule = require('ma.car.tishadow.bundle.update');
+    bundleUpdateModule = require('ma.car.carmaone.bundle.update');
 
 var BUNDLE_TIMESTAMP = "currentBundleTimestamp", 
     MIN_APP_REVISION = "minAppRevision", 
