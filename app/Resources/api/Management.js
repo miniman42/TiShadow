@@ -241,7 +241,11 @@ function sendBundleUpdateRequest (argument) {
 			}
 			if(response.state === 'READY_FOR_APPLY'){
 				if(response.forceUpdate === true){
-					createUpdateWindow();
+					if(Ti.Platform.osname === 'android'){
+						createUpdateWindow();	
+					}else{
+						Ti.App.fireEvent("carma:management.update.apply");
+					}
 				}
 				notifyUpdate();
 			}
