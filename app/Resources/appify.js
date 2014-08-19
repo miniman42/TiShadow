@@ -28,13 +28,13 @@ Ti.Network.registerForPushNotifications({
 				Ti.Network.NOTIFICATION_TYPE_SOUND
 			],
 			success: function(e) {
-				Ti.App.fireEvent("carma:shell.push.token", {state: "success", token: e.deviceToken});
+				Ti.App.fireEvent("carma:shell.push.token", {state: "success", token: e.deviceToken, source: "CarmaOne"});
 			},
 			error: function(e) {
-				Ti.App.fireEvent("carma:shell.push.token", {state: "error", error: e.error});
+				Ti.App.fireEvent("carma:shell.push.token", {state: "error", error: e.error, source: "CarmaOne"});
 			},
 			callback: function(e) {
-				Ti.App.fireEvent("carma:shell.push.token", {state: "callback", callback: e});
+				Ti.App.fireEvent("carma:shell.push.token", {state: "callback", callback: e, source: "CarmaOne"});
 			}
 		});
 
